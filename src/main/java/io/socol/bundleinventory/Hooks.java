@@ -74,7 +74,11 @@ public class Hooks {
             return false;
          }
 
-         if (slot.getIndex() >= 36 || slotId < 9 || slotId >= 45) {
+         // Do NOT gate on the menu slot id: in the creative screen the player-inventory slots are
+         // only CreativeSlot-wrapped (menu ids 0..45) on the "Survival Inventory" tab; on other tabs
+         // they are plain slots appended after the 45 picker slots (menu ids >= 45). The container +
+         // index check covers every layout (armor 36-39 and offhand 40 are excluded by < 36).
+         if (slot.getIndex() >= 36) {
             return false;
          }
 

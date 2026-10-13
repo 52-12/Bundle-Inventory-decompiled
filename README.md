@@ -26,6 +26,7 @@ Only three API breaks surfaced when recompiling against 1.21.11:
 | `BundleInventoryScreen` | `HandledScreen.drawSlot` gained mouse coords → `drawSlot(DrawContext, Slot, int, int)`; `drawSlots` → `drawSlots(DrawContext, int, int)`. Updated the overrides, `super` calls, and the internal call. |
 | `HandledScreenMixin`, `CreativeInventoryScreenMixin` | Restored an intermediate `(Object)` cast the decompiler had dropped: `(HandledScreen)this` → `(HandledScreen)(Object)this`. |
 | `bundleinventory.accesswidener` | Authored in the `named` namespace (Loom emits it as `intermediary` in the jar). |
+| `Hooks.onScreenSlotClick` | Dropped the `slotId < 9 || slotId >= 45` menu-slot-id guard (kept `slot.getIndex() < 36`). In the creative screen the player-inventory slots only have menu ids 0..45 on the "Survival Inventory" tab; on other tabs they are plain slots appended after the 45 picker slots (menu ids >= 45). The old guard rejected those, so the shift-right-click wasn't intercepted and vanilla's `CreativeScreenHandler.quickMove` deleted the item. The container/index check now covers every creative tab. |
 
 Mixins are remapped statically by Loom (no refmap), so the `@Inject(method = "...")`
 targets are written in Yarn names and rewritten to intermediary at build time.
