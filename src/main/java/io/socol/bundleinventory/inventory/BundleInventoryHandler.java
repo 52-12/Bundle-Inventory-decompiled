@@ -372,7 +372,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          return 0;
       }
 
-      Mutable builder = content.asMutable();
+      Mutable builder = new Mutable(content);
       return builder.tryInsert(stackToAdd.copy());
    }
 
