@@ -1,6 +1,6 @@
 package io.socol.bundleinventory.inventory;
 
-import com.mojang.blaze3d.platform.InputConstants;
+import io.socol.bundleinventory.BundleCompat;
 import io.socol.bundleinventory.BundleInventoryMod;
 import io.socol.bundleinventory.util.UIDrawer;
 import java.util.Optional;
@@ -177,7 +177,7 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
             ItemStack var7 = new ItemStack(bundleItem);
             BundleContents stackContent = stack.get(DataComponents.BUNDLE_CONTENTS);
             if (stackContent != null && stackContent.size() > 0) {
-               Mutable openBundleContent = new Mutable(stackContent);
+               Mutable openBundleContent = BundleCompat.asMutable(stackContent);
                openBundleContent.toggleSelectedItem(0);
                var7.set(DataComponents.BUNDLE_CONTENTS, openBundleContent.toImmutable());
             }
@@ -245,8 +245,7 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
          return super.mouseClicked(click, doubled);
       }
 
-      boolean shiftClick = InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), 340)
-         || InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), 344);
+      boolean shiftClick = BundleCompat.isKeyDown(340) || BundleCompat.isKeyDown(344);
       ContainerInput actionType = shiftClick ? ContainerInput.QUICK_MOVE : ContainerInput.PICKUP;
       int slotIndex = bundleSlot.getContainerSlot();
       ((BundleInventoryHandler)this.menu).handleBundleSlotAction(slotIndex, click.button(), actionType);

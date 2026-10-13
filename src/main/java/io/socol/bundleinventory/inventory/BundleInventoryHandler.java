@@ -1,5 +1,6 @@
 package io.socol.bundleinventory.inventory;
 
+import io.socol.bundleinventory.BundleCompat;
 import io.socol.bundleinventory.BundleInventoryMod;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.Map;
@@ -372,7 +373,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          return 0;
       }
 
-      Mutable builder = new Mutable(content);
+      Mutable builder = BundleCompat.asMutable(content);
       return builder.tryInsert(stackToAdd.copy());
    }
 
