@@ -163,10 +163,12 @@ function Write-Options([string]$InstanceDir) {
     # Keep rendering while unfocused so the window can be inspected.
     $options['pauseOnLostFocus'] = 'false'
     if (-not $options.Contains('renderDistance')) { $options['renderDistance'] = '8' }
-    # Playtest defaults: readable GUI, Quake Pro FOV, no music.
+    # Playtest defaults: readable GUI, Quake Pro FOV (fov is normalized, so 1.0
+    # is the maximum), music off.
     $options['guiScale'] = '2'
-    $options['fov'] = '110'
-    $options['music'] = '0.0'
+    $options['fov'] = '1.0'
+    $options['soundCategory_music'] = '0.0'
+    $options.Remove('music')
     Write-TextFile $path (($options.Keys | ForEach-Object { "$($_):$($options[$_])" }) -join "`n")
 }
 
