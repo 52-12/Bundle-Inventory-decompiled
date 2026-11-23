@@ -2,6 +2,7 @@ package io.socol.bundleinventory.inventory;
 
 import io.socol.bundleinventory.BundleCompat;
 import io.socol.bundleinventory.BundleInventoryMod;
+import io.socol.bundleinventory.util.StepColor;
 import io.socol.bundleinventory.util.UIDrawer;
 import java.util.Optional;
 import net.minecraft.client.Minecraft;
@@ -41,6 +42,7 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
    private final boolean openInventoryOnClose;
    private float currentBarOccupancy;
    private float prevBarOccupancy;
+   private final StepColor barColor = new StepColor(new float[]{0.75F, 0.9F, 1.0F, 2.0F}, new int[]{-13710223, -2379249, -1671646, -1618884});
    private int scrollBarSelectedRow;
    private int scrollBarRowsCount;
    private Slot focusedBundleSlot = null;
@@ -134,18 +136,20 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
 
             drawer.move(this.imageWidth - 7 - barWidth, 8).drawBossBar(barWidth, barProgress, barColor, BossBarOverlay.NOTCHED_10);
          } else {
-            this.drawSmoothBar(context, x0 + this.imageWidth - 7 - barWidth, y0 + 8, barWidth, barOccupancy);
+            this.drawSmoothBar(context, x0, y0, delta, content.weight().getOrThrow().floatValue());
          }
       }
    }
 
-   private void drawSmoothBar(GuiGraphicsExtractor context, int x, int y, int width, float occupancy) {
-      float clamped = Mth.clamp(occupancy, 0.0F, 1.0F);
-      int progress = Mth.ceil(clamped * width);
-      int color = clamped > 0.9F ? 0xFFFF5555 : (clamped > 0.7F ? 0xFFFFFF55 : 0xFF55FF55);
-      context.fill(x - 1, y - 1, x + width + 1, y + 6, 0xFF000000);
-      context.fill(x, y, x + width, y + 5, 0xFF3A3A3A);
-      context.fill(x, y, x + progress, y + 5, color);
+   private void drawSmoothBar(GuiGraphicsExtractor context, int x0, int y0, float delta, float weight) {
+      float barOccupancy = Mth.lerp(delta, this.prevBarOccupancy, this.currentBarOccupancy);
+      int barWidth = Mth.ceil(barOccupancy * 38.0F);
+      int barColor = this.barColor.get(weight, delta);
+      int left = x0 + this.imageWidth - 46;
+      int top = y0 + 6;
+      context.fill(left - 1, top - 1, left + 39, top + 9, 0xFF373737);
+      context.fill(left, top, left + 38, top + 8, 0xFF8B8B8B);
+      context.fill(left, top, left + barWidth, top + 8, barColor);
    }
 
    protected void extractLabels(GuiGraphicsExtractor context, int mouseX, int mouseY) {
@@ -211,6 +215,7 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
          this.prevBarOccupancy = this.currentBarOccupancy;
          BundleContents content = ((BundleInventoryHandler)this.menu).getBundleInventory().getBundleContent();
          if (content != null) {
+            this.barColor.update(content.weight().getOrThrow().floatValue());
             float targetBarValue = content.weight().getOrThrow().floatValue();
             this.currentBarOccupancy = Mth.lerp(0.5F, this.currentBarOccupancy, targetBarValue);
             if (targetBarValue <= 0.0F && this.currentBarOccupancy <= 0.01F) {

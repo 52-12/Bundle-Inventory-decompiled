@@ -198,9 +198,13 @@ Kept deliberately minimal, and all mechanical:
   `getContainerSlot() < 36` check.
 - **Fullness-bar style option (new).** `useBossBarFullness` (default on) is
   exposed in the Cloth config on Fabric and defaults to on everywhere else. The
-  boss-bar style uses the vanilla `boss_bar/*` sprites on every era; the smooth
-  style uses the original 1.21.2–1.21.4 fill bar colours. This is an addition,
-  not a backport of an upstream option.
+  boss-bar style uses the vanilla `boss_bar/*` sprites on every era. The smooth
+  style reproduces the original 1.21.2–1.21.4 bar exactly: the same `StepColor`
+  steps (green → gold → orange → red, white at 2.0), a 38x8 recess, and no
+  clamping, so an over-full or illegal bundle paints past the frame and across
+  the window. 1.21.2–1.21.4 draw the original sunken frame from `bundle.png`;
+  later eras outline it with fills because they ship no such asset. This is an
+  addition, not a backport of an upstream option.
 - **Client-side insertion checks, backported.** 1.21.5 added the
   `clientSideItemInsertionChecks` config (default true). The check methods
   already existed in 1.21.2–1.21.4; they are now gated by the same config there.
