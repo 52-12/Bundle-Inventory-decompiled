@@ -4,9 +4,7 @@
 #   powershell -File ..\tools\create-prism-instances.ps1      (from the repo root)
 param(
     [string]$Repo = '',
-    [string]$PrismData = "$env:APPDATA\PrismLauncher",
-    [string]$Java21 = 'C:/Program Files/Eclipse Adoptium/jdk-21.0.9.10-hotspot/bin/javaw.exe',
-    [string]$Java25 = 'C:/Program Files/Eclipse Adoptium/jdk-25.0.1.8-hotspot/bin/javaw.exe'
+    [string]$PrismData = "$env:APPDATA\PrismLauncher"
 )
 $ErrorActionPreference = 'Stop'
 if (-not $Repo) {
@@ -71,14 +69,13 @@ function New-Instance($name, $group, $mc, $loader, $loaderVersion, $jar, $isNil)
     $mcDir = Join-Path $dir '.minecraft'
     New-Item -ItemType Directory -Force -Path (Join-Path $mcDir 'mods') | Out-Null
 
-    $javaPath = if ($mc -like '26.*') { $Java25 } else { $Java21 }
-    $javaVersion = if ($mc -like '26.*') { '25.0.1' } else { '21.0.9' }
-
     $components = @(@{ uid = 'net.minecraft'; version = $mc; important = $true })
     if ($loader) { $components += @{ uid = $loader; version = $loaderVersion } }
     $pack = [ordered]@{ formatVersion = 1; components = $components }
     Set-Content -Path (Join-Path $dir 'mmc-pack.json') -Value ($pack | ConvertTo-Json -Depth 5)
 
+    # No Java overrides: let Prism auto-select its managed runtime (delta for
+    # 1.21.x, epsilon for 26.x). Pinning external JDK paths proved fragile.
     $cfg = @(
         'InstanceType=OneSix'
         "name=$name"
@@ -86,14 +83,12 @@ function New-Instance($name, $group, $mc, $loader, $loaderVersion, $jar, $isNil)
         'OverrideMemory=true'
         'MinMemAlloc=1024'
         'MaxMemAlloc=4096'
-        'OverrideJavaVersion=true'
-        "JavaVersion=$javaVersion"
-        'JavaArchitecture=64'
-        "JavaPath=$javaPath"
     )
     if ($isNil) {
+        # Prism appends -Djava.library.path after instance args, so overriding
+        # the JVM args is safe; carry the memory flags explicitly.
         $cfg += 'OverrideJavaArgs=true'
-        $cfg += "JvmArgs=-javaagent:$jar"
+        $cfg += "JvmArgs=-Xms1G -Xmx4G -javaagent:$jar"
     }
     Set-Content -Path (Join-Path $dir 'instance.cfg') -Value $cfg
 
