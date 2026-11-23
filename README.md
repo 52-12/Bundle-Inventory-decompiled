@@ -161,13 +161,16 @@ Kept deliberately minimal, and all mechanical:
 - **Decompiler artifacts.** Mixin classes cast themselves through
   `(Object)` (`(AbstractContainerScreen)(Object)this`) — the cast the
   decompiler dropped and Mixin needs to compile.
-- **NeoForge and Forge config screens.** The Cloth Config integration is
-  Fabric-only, so the NeoForge and Forge builds run on the mod's built-in
-  default config (6 rows, sounds on, open-bundle highlight on). Everything
-  else works identically. Both declare the mod client-only (NeoForge
-  `dist=CLIENT` entrypoint; Forge `clientSideOnly=true` in mods.toml), and
-  their jars carry the `pack.mcmeta` those loaders require (copied from each
-  line's official MDK).
+- **Config screens.** Every client loader reads the same
+  `config/bundleinventory.properties`. Fabric exposes the settings screen
+  through Mod Menu, Forge through `ConfigScreenHandler.ConfigScreenFactory`
+  (Config button in the Mods list) and NeoForge through
+  `IConfigScreenFactory` (Config button). The screen is a plain vanilla-widget
+  `Screen`, so Cloth Config is optional and not required for the UI. NilLoader
+  has no config API, so it reads the properties file only. Both non-Fabric
+  entrypoints declare the mod client-only (NeoForge `dist=CLIENT`; Forge
+  `clientSideOnly=true`), and their jars carry the `pack.mcmeta` those loaders
+  require (copied from each line's official MDK).
 - **NilLoader build.** The three SpongePowered mixins become Mini transformers
   that call the same `Hooks` methods (NilLoader does not support Mixin), and
   the access widener becomes a runtime access-flag transformer; the build

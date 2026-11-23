@@ -170,6 +170,21 @@ function Write-Options([string]$InstanceDir) {
     $options['soundCategory_music'] = '0.0'
     $options.Remove('music')
     Write-TextFile $path (($options.Keys | ForEach-Object { "$($_):$($options[$_])" }) -join "`n")
+
+    # Loader-agnostic settings file. Every build reads it; NilLoader has no
+    # config screen, so this file is its only interface.
+    $settingsPath = Join-Path $InstanceDir '.minecraft\config\bundleinventory.properties'
+    if (-not (Test-Path $settingsPath)) {
+        New-Item -ItemType Directory -Force (Split-Path $settingsPath -Parent) | Out-Null
+        Write-TextFile $settingsPath (@(
+            'bundleInventoryVisibleRows=6',
+            'shouldPlayBundleInventorySounds=true',
+            'indicateOpenBundle=true',
+            'showEquipmentSlotsInBundleInventory=false',
+            'clientSideItemInsertionChecks=true',
+            'useBossBarFullness=true'
+        ) -join "`n")
+    }
 }
 
 function Set-LaunchWorld([string]$InstanceDir) {

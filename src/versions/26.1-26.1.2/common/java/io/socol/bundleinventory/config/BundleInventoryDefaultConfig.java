@@ -6,9 +6,6 @@ import net.minecraft.client.gui.screens.Screen;
 public class BundleInventoryDefaultConfig implements BundleInventoryConfig {
    public static final BundleInventoryConfig INSTANCE = new BundleInventoryDefaultConfig();
 
-   public BundleInventoryDefaultConfig() {
-   }
-
    @Override
    public Function<Screen, Screen> getScreenFactory() {
       return parent -> null;
@@ -16,31 +13,31 @@ public class BundleInventoryDefaultConfig implements BundleInventoryConfig {
 
    @Override
    public int bundleInventoryVisibleRows() {
-      return 6;
+      return BundleInventorySettings.get().rows();
    }
 
    @Override
    public boolean shouldPlayBundleInventorySounds() {
-      return true;
+      return BundleInventorySettings.get().sounds();
    }
 
    @Override
    public boolean indicateOpenBundle() {
-      return true;
+      return BundleInventorySettings.get().indicateOpen();
    }
 
    @Override
    public boolean showEquipmentSlotsInBundleInventory() {
-      return false;
+      return BundleInventorySettings.get().equipment();
    }
 
    @Override
    public boolean clientSideItemInsertionChecks() {
-      return true;
+      return BundleInventorySettings.get().clientChecks();
    }
 
    @Override
    public boolean useBossBarFullness() {
-      return true;
+      return BundleInventorySettings.get().bossBar();
    }
 }

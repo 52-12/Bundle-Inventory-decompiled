@@ -84,12 +84,18 @@ Repeat for each instance in the priority table.
    bundle on a non-Survival tab, report it with the instance name.
 9. **Rejection** — try to insert the shulker box; bundles must refuse it
    (fail sound, no item moved).
-10. **Config (Fabric only)** — Mod Menu → Bundle Inventory → config screen.
-    Change visible rows (3–8), sounds, open-bundle highlight, equipment
-    slots, and **fullness bar style** (boss bar, the default, or the smooth
-    bar). Reopen a bundle and verify the change. Keep rows ≤ 7 if you still
-    want to test scrolling. NeoForge/Forge/Nil use the built-in defaults
-    (boss bar, 6 rows, sounds on).
+10. **Config** - the same settings screen is reachable natively on every
+    loader that has a config API:
+    - **Fabric:** Mod Menu -> Bundle Inventory
+    - **Forge / NeoForge:** Mods list -> Bundle Inventory -> **Config**
+    - **NilLoader:** no config API - edit
+      `.minecraft/config/bundleinventory.properties`
+
+    Change visible rows (3-8), sounds, open-bundle highlight, equipment
+    slots, client-side checks, and **fullness bar style** (boss bar, the
+    default, or smooth). The screen writes
+    `config/bundleinventory.properties`. Keep rows <= 7 if you still want
+    to test scrolling.
 11. **Persistence** — quit to title, rejoin the world, verify bundle contents
     and config survive.
 12. **Log** — no `bundleinventory` exception, no `Failed to load function`, no
