@@ -4,6 +4,11 @@ pluginManagement {
         maven { url = 'https://maven.kikugie.dev/releases'; name = 'KikuGie Releases' }
         maven { url = 'https://maven.kikugie.dev/snapshots'; name = 'KikuGie Snapshots' }
         maven { url = 'https://maven.neoforged.net/releases' }
+        // NilGradle's plugin marker.
+        maven {
+            url = 'https://repo.sleeping.town'
+            content { includeGroup 'com.unascribed.nilgradle' }
+        }
         mavenCentral()
         gradlePluginPortal()
     }
@@ -73,6 +78,15 @@ def forgeGroups = [
         '26.3-forge'         : '26.3',
 ]
 
+// NilLoader (Java-agent loader). Only the unobfuscated 26.x line is viable:
+// no mapping layer, no resource mounting (the 26.x-era code draws vanilla
+// sprites only), and the three mixins are rewritten as Mini transformers.
+def nilGroups = [
+        '26.1-26.1.2-nil': '26.1',
+        '26.2-nil'       : '26.2',
+        '26.3-nil'       : '26.3',
+]
+
 stonecutter {
     kotlinController = false
 
@@ -80,6 +94,7 @@ stonecutter {
         versions(fabricGroups).buildscript('fabric.build.gradle')
         versions(neoforgeGroups).buildscript('neoforge.build.gradle')
         versions(forgeGroups).buildscript('forge.build.gradle')
+        versions(nilGroups).buildscript('nil.build.gradle')
         // The node whose directory state is what lives in git.
         vcsVersion = '26.3-fabric'
     }

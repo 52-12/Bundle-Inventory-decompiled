@@ -3,7 +3,9 @@
 The decompiled, buildable source of **Bundle Inventory** (Fabric mod by
 Socolio, All Rights Reserved) for **every Minecraft version that has the
 scrollable bundle item — 1.21.2 (Bundles of Bravery) through 26.3 — on both
-Fabric and NeoForge**, rebuilt from the author's own published builds.
+Fabric and NeoForge**, rebuilt from the author's own published builds — plus
+Forge from 1.21.3 and a **NilLoader build for 26.x** that runs the mod on
+completely vanilla Minecraft with no mod loader at all.
 
 One jar per **release group** per loader — the biggest Minecraft span each
 loader can honestly run a single jar on:
@@ -36,6 +38,16 @@ the Fabric jars natively (the mod uses no Fabric API, and its
 `fabricloader >=0.16.x` floor is well under Quilt's reported 0.19.5), so no
 separate Quilt build exists — verify with one playtest on Quilt. No other
 loader has builds for any Minecraft version that has the bundle item.
+
+**NilLoader (3 jars, 26.x only)** — the loader-less build: a Java agent that
+runs the mod on stock Minecraft. Only 26.x is viable because the game is
+unobfuscated there (no mapping layer — and nilgradle's shaded ASM cannot read
+the 26.x class format anyway) and the 26.x-era code draws vanilla sprites only
+(a nilmod cannot mount a resource pack; the 1.21.2–1.21.4 eras draw a
+mod-provided texture, so they are not portable). The three mixins are
+rewritten as Mini transformers that delegate into the same unchanged `Hooks`
+class, and the access widener is replaced by a runtime transformer plus a
+build-time widened compile jar.
 
 Each jar reports honest provenance, e.g. `BundleInventory-Fabric-1.7.2+mc1.21.6-1.21.8.jar`
 is a recompile of official build **1.7.2** for **Minecraft 1.21.6–1.21.8**,
@@ -82,15 +94,17 @@ src/versions/<era>/
   forge/java/           Forge entrypoint (@Mod, mods.toml clientSideOnly)
   forge/templates/      mods.toml template
   forge/resources/      access transformer + pack.mcmeta
+  nil/java/             NilLoader premain + Mini transformers (26.x eras)
+  nil/resources/        bundleinventory.nilmod.css
   mixins/               the official mixin config
   packaging/            icon, language file, textures from the official jar
 ```
 
 The build is driven by [Stonecutter](https://stonecutter.kikugie.dev/) with
 [loom-back-compat](https://codeberg.org/KikuGie/loom-back-compat) (Fabric),
-[ModDevGradle](https://github.com/neoforged/ModDevGradle) (NeoForge) and
-ForgeGradle 7 (Forge); per-node coordinates live in
-`stonecutter.properties.toml`.
+[ModDevGradle](https://github.com/neoforged/ModDevGradle) (NeoForge),
+ForgeGradle 7 (Forge) and [NilGradle](https://git.sleeping.town/Nil/NilGradle)
+(NilLoader); per-node coordinates live in `stonecutter.properties.toml`.
 
 ## Building
 
@@ -98,7 +112,7 @@ Requires **JDK 25 to run Gradle** (Stonecutter 0.10). The 1.21.x groups compile
 with a Java 21 toolchain that Gradle auto-provisions.
 
 ```bash
-# Everything (27 release groups: 9 Fabric + 9 NeoForge + 9 Forge).
+# Everything (30 release groups: 9 Fabric + 9 NeoForge + 9 Forge + 3 NilLoader).
 #
 # The FIRST build of a NeoForge group runs its NeoForm pipeline and the FIRST
 # build of a Forge group its ForgeGradle setup (Minecraft is decompiled for
@@ -110,6 +124,7 @@ with a Java 21 toolchain that Gradle auto-provisions.
 ./gradlew :1.21.4-fabric:build
 ./gradlew :26.3-neoforge:build
 ./gradlew :26.2-forge:build
+./gradlew :26.3-nil:build
 
 # Collect a group's jar into build/libs:
 ./gradlew :26.3-fabric:buildAndCollect
@@ -144,6 +159,15 @@ Kept deliberately minimal, and all mechanical:
   `dist=CLIENT` entrypoint; Forge `clientSideOnly=true` in mods.toml), and
   their jars carry the `pack.mcmeta` those loaders require (copied from each
   line's official MDK).
+- **NilLoader build.** The three SpongePowered mixins become Mini transformers
+  that call the same `Hooks` methods (NilLoader does not support Mixin), and
+  the access widener becomes a runtime access-flag transformer; the build
+  additionally compiles against a widened copy of the client jar because
+  javac enforces access against the raw jar. No config screen, and no dev
+  environment: iterate by dropping the jar into `nilmods/` and restarting.
+  With `standalone` enabled the jar embeds NilLoader, so it works directly as
+  `-javaagent:`. Its metadata (`bundleinventory.nilmod.css`) carries no
+  dependency or Minecraft-version fields — NilLoader has no version gating.
 - **26.1 / 26.1.1 / 26.1.2.** The author never published a 26.1 build; these
   nodes compile the official 26.2 source with the one 26.1 difference applied
   (`Minecraft.screen` field instead of the 26.2 `Minecraft.gui.screen()`

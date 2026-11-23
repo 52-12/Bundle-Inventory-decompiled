@@ -1,0 +1,240 @@
+import java.util.zip.ZipFile
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.FieldVisitor
+import org.objectweb.asm.Opcodes
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        // Rewrites the game jar for the compile classpath only (see
+        // widenGameJar). Runtime widening is done by the nilmod itself.
+        classpath 'org.ow2.asm:asm:9.10.1'
+    }
+}
+
+plugins {
+    // NilLoader's minimal Gradle plugin (Java-agent mods). Only used for game
+    // resolution and the standalone-agent jar layout: with no `mappings {}`
+    // block it never touches a game class, which is required because its
+    // shaded ASM tops out at class major 68 while the 26.x game is major 69.
+    // https://git.sleeping.town/Nil/NilGradle
+    id 'com.unascribed.nilgradle' version '1.5.2'
+}
+
+// NilLoader port of the mod, for the unobfuscated 26.x line only:
+//  - no mapping layer (the game ships Mojang names; nilgradle's ASM cannot
+//    read major-69 classes anyway),
+//  - no mixins (three Mini transformers delegate into the same common Hooks),
+//  - no resource mounting (the 26.x-era code draws vanilla sprites only),
+//  - no access widener file (the runtime transformer + a build-time widened
+//    compile jar replace it).
+
+// NOTE: Stonecutter manages the project identity; no `group` here.
+version = "${property('mod.version')}+mc${property('mod.mc_label')}"
+base {
+    archivesName = 'BundleInventory-Nil'
+}
+
+def eraDir = "${rootDir}/src/versions/${property('sources.dir')}"
+def javaRelease = 25 // 26.x game classes are major 69: javac must be JDK 25
+
+repositories {
+    maven {
+        name = 'Sleeping Town'
+        url = 'https://repo.sleeping.town'
+        content { includeGroup 'com.unascribed' }
+    }
+    mavenCentral()
+}
+
+nil {
+    id 'bundleinventory'
+    // Embed NilLoader and set the agent manifest entries, so this single jar
+    // can be used directly as a Java agent (or dropped in nilmods/).
+    standalone true
+}
+
+dependencies {
+    loader 'com.unascribed:nilloader:1.4.1'
+
+    // Any of the three 26.x targets resolves; the node picks its own version.
+    game nil.minecraft(stonecutter.current.version, 'client')
+
+    // NilLoader's API (Mini, ClassTransformer) for compiling the glue.
+    compileOnly 'com.unascribed:nilloader:1.4.1'
+    compileOnly 'org.jetbrains:annotations:24.0.1'
+
+    // Deliberately no mappings block: see the comment at the top.
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["${eraDir}/common/java", "${eraDir}/nil/java"]
+            // The SpongePowered mixins are replaced by Mini transformers.
+            exclude 'io/socol/bundleinventory/mixin/**'
+        }
+        resources {
+            // No packaging/assets: a nilmod cannot mount a resource pack, and
+            // the 26.x-era code uses no mod-provided assets.
+            srcDirs = ["${eraDir}/nil/resources"]
+        }
+    }
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.toVersion(javaRelease)
+    targetCompatibility = JavaVersion.toVersion(javaRelease)
+
+    toolchain {
+        vendor = JvmVendorSpec.ADOPTIUM
+        languageVersion = JavaLanguageVersion.of(javaRelease)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = javaRelease
+}
+
+// ---------------------------------------------------------------- widening --
+// javac checks access against the raw game jar, so the four former access
+// widener members are widened in a COPY of the game jar that only the compile
+// task sees. Runtime widening is done by AccessWidenerTransformer.
+
+class WidenVisitor extends ClassVisitor {
+    static final Map<String, Set<String>> FIELD_TARGETS = [
+            'net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper':
+                    ['target:Lnet/minecraft/world/inventory/Slot;'] as Set,
+            'net/minecraft/client/gui/screens/inventory/AbstractContainerScreen':
+                    ['skipNextRelease:Z'] as Set,
+    ] as Map
+    static final Set<String> CLASS_TARGETS = [
+            'net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper',
+            'net/minecraft/client/gui/screens/inventory/AbstractContainerScreen',
+            'net/minecraft/world/inventory/ArmorSlot',
+    ] as Set
+
+    String current
+
+    WidenVisitor(ClassVisitor next) {
+        super(Opcodes.ASM9, next)
+    }
+
+    static int makePublic(int access) {
+        return (access & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PUBLIC
+    }
+
+    @Override
+    void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        current = name
+        if (CLASS_TARGETS.contains(name)) access = makePublic(access)
+        super.visit(version, access, name, signature, superName, interfaces)
+    }
+
+    @Override
+    void visitInnerClass(String name, String outerName, String innerName, int access) {
+        // javac reads access from the InnerClasses attribute, so widen it too.
+        if (CLASS_TARGETS.contains(name)) access = makePublic(access)
+        super.visitInnerClass(name, outerName, innerName, access)
+    }
+
+    @Override
+    FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+        def fields = FIELD_TARGETS.get(current)
+        if (fields != null && fields.contains(name + ':' + descriptor)) access = makePublic(access)
+        return super.visitField(access, name, descriptor, signature, value)
+    }
+}
+
+def isGameJar = { File f ->
+    if (!f.name.endsWith('.jar')) return false
+    try {
+        ZipFile z = new ZipFile(f)
+        try {
+            return z.getEntry('net/minecraft/client/Minecraft.class') != null
+        } finally {
+            z.close()
+        }
+    } catch (Exception ignored) {
+        return false
+    }
+}
+
+def widenedJar = layout.buildDirectory.file('nil/widened-game.jar')
+def gameJarProvider = providers.provider {
+    configurations.compileClasspath.files.find { isGameJar(it) }
+}
+
+def widenGameJar = tasks.register('widenGameJar') {
+    def gameJar = gameJarProvider
+    inputs.files(gameJar)
+    outputs.file(widenedJar)
+    doLast {
+        File source = gameJar.get()
+        if (source == null) {
+            throw new GradleException('widenGameJar: could not find the Minecraft client jar on compileClasspath')
+        }
+        File dest = widenedJar.get().asFile
+        dest.parentFile.mkdirs()
+        def widen = { byte[] bytes ->
+            def reader = new ClassReader(bytes)
+            def writer = new ClassWriter(reader, 0)
+            reader.accept(new WidenVisitor(writer), 0)
+            return writer.toByteArray()
+        }
+        def pending = [] as Set
+        def zipOut = new java.util.zip.ZipOutputStream(new FileOutputStream(dest))
+        try {
+            new ZipFile(source).withCloseable { zipIn ->
+                zipIn.entries().each { entry ->
+                    if (entry.directory) {
+                        zipOut.putNextEntry(new java.util.zip.ZipEntry(entry.name))
+                        zipOut.closeEntry()
+                        return
+                    }
+                    def bytes = zipIn.getInputStream(entry).bytes
+                    boolean ours = WidenVisitor.CLASS_TARGETS.any { entry.name == it + '.class' }
+                    if (ours) bytes = widen(bytes)
+                    zipOut.putNextEntry(new java.util.zip.ZipEntry(entry.name))
+                    zipOut.write(bytes)
+                    zipOut.closeEntry()
+                }
+            }
+        } finally {
+            zipOut.close()
+        }
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn widenGameJar
+    classpath = files({
+        File widened = widenedJar.get().asFile
+        sourceSets.main.compileClasspath.files.collect { f -> (isGameJar(f) ? widened : f) }
+    })
+}
+
+// ---------------------------------------------------------------- metadata --
+// NilGradle expands ${version} in <id>.nilmod.css itself (NilPlugin wires the
+// processResources expansion), so there is nothing to do here.
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE_BundleInventory-Fabric')) {
+        rename { "${it}-bundleinventory" }
+    }
+}
+
+// Builds the mod jar for the current node and collects it into `build/libs/`.
+tasks.register('buildAndCollect', Copy) {
+    group = 'build'
+    description = 'Builds the nilmod jar and copies it to `build/libs/`'
+    dependsOn 'build'
+    from(tasks.named('jar').flatMap { it.archiveFile })
+    into(rootProject.layout.buildDirectory.dir('libs'))
+}

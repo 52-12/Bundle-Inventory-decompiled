@@ -12,6 +12,7 @@ on:
       - 'fabric.build.gradle'
       - 'neoforge.build.gradle'
       - 'forge.build.gradle'
+      - 'nil.build.gradle'
       - 'gradle/**'
       - 'gradlew'
       - 'gradlew.bat'

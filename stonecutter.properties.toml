@@ -304,3 +304,25 @@ java.release = "25"
 deps.forge = "66.1.9"
 deps.forge_spec = "66"
 deps.eventbus_validator = "7.0.6"
+
+# ------------------------------------------------------------------ nil ----
+# NilLoader: a Java-agent loader. 26.x only — the game is unobfuscated (no
+# mapping layer needed and nilgradle's shaded ASM cannot read major-69 classes
+# anyway) and the 26.x-era code draws vanilla sprites only (a nilmod cannot
+# mount a resource pack). The three mixins become Mini transformers; the
+# build compiles against a widened copy of the client jar.
+
+["26.1-26.1.2-nil"]
+sources.dir = "26.1-26.1.2"
+mod.version = "1.7.3"
+mod.mc_label = "26.1-26.1.2"
+
+["26.2-nil"]
+sources.dir = "26.2"
+mod.version = "1.7.3"
+mod.mc_label = "26.2"
+
+["26.3-nil"]
+sources.dir = "26.3"
+mod.version = "1.7.3"
+mod.mc_label = "26.3"
