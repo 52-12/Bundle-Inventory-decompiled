@@ -175,6 +175,15 @@ Kept deliberately minimal, and all mechanical:
   declare the mod client-only (NeoForge `dist=CLIENT`; Forge
   `clientSideOnly=true`), and their jars carry the `pack.mcmeta` those loaders
   require (copied from each line's official MDK).
+- **NeoForge 1.21.9 caveat.** NeoForge's last 1.21.9 build (21.9.16-beta)
+  crashes its own Mods screen: `ModListScreen.reloadMods` stores
+  `stream().toList()` and `tick` then calls `.sort()` on it
+  (`UnsupportedOperationException` in `ImmutableCollections`). That is
+  upstream and happens with or without this mod. The 1.21.9-1.21.10 node still
+  compiles against 1.21.9 (the oldest supported version) so the jar stays safe
+  on both, but its playtest instance runs Minecraft 1.21.10 with NeoForge
+  21.10.64, where the list is collected mutably and the screen opens. Verified
+  there: join, Mods screen, and bundle insert/take-out.
 - **Forge 26.x caveats.** Forge 62.0.9 (the 26.1 line) crashes in its own
   `FieldToMethodTransformer` (`Field fluid is not private`) even with no mods
   installed, so the 26.1-26.1.2 node and its instance target 26.1.2 with Forge
