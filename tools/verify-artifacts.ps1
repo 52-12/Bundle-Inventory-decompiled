@@ -1,5 +1,5 @@
-# Verifies the release artifact set: 30 groups (9 Fabric + 9 NeoForge +
-# 9 Forge + 3 NilLoader), exactly one non-sources jar each.
+# Verifies the release artifact set: 36 groups (9 Fabric + 9 NeoForge +
+# 9 Forge + 9 NilLoader), exactly one non-sources jar each.
 #   powershell -File ..\tools\verify-artifacts.ps1      (from the repo root)
 param([string]$Repo = '')
 $ErrorActionPreference = 'Stop'
@@ -24,6 +24,8 @@ $expected = @(
     '1.21.6-1.21.8-forge', '1.21.9-1.21.10-forge', '1.21.11-forge',
     '26.1-26.1.2-forge', '26.2-forge', '26.3-forge',
     # NilLoader
+    '1.21.2-1.21.3-nil', '1.21.4-nil', '1.21.5-nil',
+    '1.21.6-1.21.8-nil', '1.21.9-1.21.10-nil', '1.21.11-nil',
     '26.1-26.1.2-nil', '26.2-nil', '26.3-nil'
 )
 
