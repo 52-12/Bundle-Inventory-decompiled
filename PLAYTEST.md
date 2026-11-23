@@ -22,10 +22,10 @@ Everything here is prepared by `tools/make-playtest-worlds.ps1` and
 ## Launching
 
 Prism is configured with `JoinServerOnLaunch=true` and
-`JoinWorldOnLaunch=BundlePlaytest`, so pressing Play goes straight into the
-world and skips the main menu (verified on 1.21.4). If an instance ever lands
-on the title screen, its config lost those keys (Prism rewrites
-`instance.cfg` from memory); close Prism and rerun
+`JoinWorldOnLaunch=BundlePlaytest`, **inside `[General]`** (Prism ignores
+settings placed under `[UI]`, which it appends to `instance.cfg`), so pressing
+Play goes straight into the world and skips the main menu (verified on
+1.21.5). If an instance ever lands on the title screen, close Prism and rerun
 `tools/make-playtest-worlds.ps1 -Only '<instance name>'`.
 
 ## Kit map
