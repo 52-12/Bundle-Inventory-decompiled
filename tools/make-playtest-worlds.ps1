@@ -163,13 +163,14 @@ function Write-Options([string]$InstanceDir) {
     # Keep rendering while unfocused so the window can be inspected.
     $options['pauseOnLostFocus'] = 'false'
     if (-not $options.Contains('renderDistance')) { $options['renderDistance'] = '8' }
-    Write-TextFile $path (($options.Keys | ForEach-Object { "$_=$($options[$_])" }) -join "`n")
+    Write-TextFile $path (($options.Keys | ForEach-Object { "$($_):$($options[$_])" }) -join "`n")
 }
 
 function Set-LaunchWorld([string]$InstanceDir) {
     $cfg = Join-Path $InstanceDir 'instance.cfg'
-    $lines = Get-Content $cfg | Where-Object { $_ -notmatch '^JoinWorldOnLaunch=' }
+    $lines = Get-Content $cfg | Where-Object { $_ -notmatch '^(JoinWorldOnLaunch|JoinServerOnLaunch|JoinServerOnLaunchAddress)=' }
     while ($lines.Count -gt 0 -and $lines[-1] -eq '') { $lines = $lines[0..($lines.Count - 2)] }
+    $lines += 'JoinServerOnLaunch=true'
     $lines += "JoinWorldOnLaunch=$WorldName"
     Write-TextFile $cfg (($lines -join "`n") + "`n")
 }

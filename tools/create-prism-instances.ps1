@@ -83,6 +83,10 @@ function New-Instance($name, $group, $mc, $loader, $loaderVersion, $jar, $isNil)
         'OverrideMemory=true'
         'MinMemAlloc=1024'
         'MaxMemAlloc=4096'
+        # Quick play: Prism only consults JoinWorldOnLaunch while
+        # JoinServerOnLaunch is enabled (see MinecraftInstance::createLaunchTask).
+        'JoinServerOnLaunch=true'
+        'JoinWorldOnLaunch=BundlePlaytest'
     )
     if ($isNil) {
         # Prism appends -Djava.library.path after instance args, so overriding
