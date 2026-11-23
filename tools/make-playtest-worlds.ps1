@@ -58,9 +58,9 @@ $kitLines = @(
     'give @s minecraft:bundle[minecraft:bundle_contents=[{id:"minecraft:stone",count:32},{id:"minecraft:apple",count:8},{id:"minecraft:diamond",count:4}]]',
     'give @s minecraft:bundle[minecraft:bundle_contents=[{id:"minecraft:dirt",count:32},{id:"minecraft:stone",count:32}]]',
     'give @s minecraft:bundle[minecraft:bundle_contents=[{id:"minecraft:stone",count:63}]]',
-    'give @s minecraft:bundle[minecraft:bundle_contents=[{id:"minecraft:bundle",count:1,components:{"minecraft:bundle_contents":[{id:"minecraft:diamond",count:8}]}},{id:"minecraft:ender_pearl",count:16},{id:"minecraft:apple",count:16}]]',
+    'give @s minecraft:bundle[minecraft:bundle_contents=[{id:"minecraft:bundle",count:1,components:{"minecraft:bundle_contents":[{id:"minecraft:diamond",count:8}]}}]]',
     ('give @s minecraft:bundle[minecraft:bundle_contents=[' + $scroll + ']]'),
-    'give @s minecraft:bundle[minecraft:bundle_contents=[{id:"minecraft:diamond_sword",count:1},{id:"minecraft:diamond_pickaxe",count:1},{id:"minecraft:diamond_axe",count:1},{id:"minecraft:diamond_shovel",count:1},{id:"minecraft:bow",count:1},{id:"minecraft:shield",count:1},{id:"minecraft:elytra",count:1},{id:"minecraft:trident",count:1}]]',
+    'give @s minecraft:bundle[minecraft:bundle_contents=[{id:"minecraft:diamond_sword",count:1}]]',
     'give @s minecraft:bundle[minecraft:bundle_contents=[{id:"minecraft:apple",count:1}]]',
     'give @s minecraft:dirt 64',
     'give @s minecraft:cobblestone 64',
@@ -70,9 +70,11 @@ $kitLines = @(
     'give @s minecraft:shulker_box 1',
     'give @s minecraft:bundle',
     'give @s minecraft:diamond_sword 1',
+    'give @s minecraft:diamond_pickaxe 1',
+    'give @s minecraft:bow 1',
     'tellraw @s ["",{"text":"Bundle Inventory playtest kit","bold":true,"color":"gold"},{"text":"  hotbar: 1 empty, 2 partial 44/64, 3 full 64/64 (two stacks)","color":"gray"}]',
-    'tellraw @s ["",{"text":"4 nearly full 63/64, 5 bundle-in-bundle, 6 scroll test (60 stacks), 7 unstackables, 8 one item, 9 dirt","color":"gray"}]',
-    'tellraw @s ["",{"text":"Inventory: cobblestone, pearls, torches, bread, spare bundle, shulker box (bundles refuse it), sword","color":"gray"}]',
+    'tellraw @s ["",{"text":"4 nearly full 63/64, 5 bundle-in-bundle, 6 scroll test (60 stacks), 7 one unstackable (full), 8 one item, 9 dirt","color":"gray"}]',
+    'tellraw @s ["",{"text":"Inventory: cobblestone, pearls, torches, bread, spare bundle, shulker box (bundles refuse it), loose sword/pickaxe/bow","color":"gray"}]',
     'tellraw @s ["",{"text":"Click ","color":"yellow"},{"text":"[refill kit]","color":"aqua","clickEvent":{"action":"run_command","value":"/function bi:kit"}},{"text":" to run /function bi:kit again","color":"yellow"}]'
 )
 
@@ -83,13 +85,15 @@ function Write-TextFile([string]$Path, [string]$Text) {
 function Write-Datapack([string]$WorldDir, [string]$PackMeta, [string]$GameruleStyle) {
     $dp = Join-Path $WorldDir 'datapacks\bundleinventory_playtest'
     Remove-Item $dp -Recurse -Force -ErrorAction SilentlyContinue
-    foreach ($d in @('data\bi\function', 'data\bi\tags\function', 'data\minecraft\tags\function')) {
+    foreach ($d in @('data\bi\function', 'data\minecraft\tags\function')) {
         New-Item -ItemType Directory -Force (Join-Path $dp $d) | Out-Null
     }
     Write-TextFile (Join-Path $dp 'pack.mcmeta') $PackMeta
     Write-TextFile (Join-Path $dp 'data\bi\function\kit.mcfunction') (($kitLines -join "`n") + "`n")
     Write-TextFile (Join-Path $dp 'data\bi\function\tick.mcfunction') "execute as @a unless entity @s[tag=bundleinventory_playtest_kit] run function bi:kit`n"
-    Write-TextFile (Join-Path $dp 'data\bi\tags\function\tick.json') '{"values":["bi:tick"]}'
+    # The tick/load tags are minecraft-namespaced; a tag under data/bi/... would
+    # define bi:tick and never run.
+    Write-TextFile (Join-Path $dp 'data\minecraft\tags\function\tick.json') '{"values":["bi:tick"]}'
     # World rules run on every load; this avoids editing era-specific level.dat
     # fields (game_rules moved out of level.dat in 1.21.9+). 1.21.11 renamed
     # every rule id to snake_case (advance_time, keep_inventory, ...), so the
@@ -350,5 +354,5 @@ if ($failures.Count -gt 0) {
 $count = ($specs | Measure-Object).Count
 Write-Output "wrote `"$WorldName`" into $count instances; Prism now joins it directly."
 Write-Output 'Kit (once per world; click the chat prompt or run /function bi:kit to refill):'
-Write-Output '  hotbar 1-9  empty / partial 44 / full 64 / nearly full 63 / nested / scroll 60 / unstackables / one item / dirt'
-Write-Output '  inventory   cobblestone, pearls, torches, bread, spare bundle, shulker box (bundles refuse it)'
+Write-Output '  hotbar 1-9  empty / partial 44 / full 64 / nearly full 63 / nested / scroll 60 / one unstackable / one item / dirt'
+Write-Output '  inventory   cobblestone, pearls, torches, bread, spare bundle, shulker box, loose tools'

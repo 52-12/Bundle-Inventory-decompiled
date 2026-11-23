@@ -117,8 +117,12 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       BundleContents content = ((BundleInventoryHandler)this.menu).getBundleInventory().getBundleContent();
       if (content != null) {
          float barOccupancy = Mth.lerp(delta, this.prevBarOccupancy, this.currentBarOccupancy);
+         // Defensive: command-created bundle contents can exceed the 1.0
+         // capacity vanilla enforces on its insert path. Clamp so the bar
+         // can never grow past its 38px frame (1.21.5+ already clamps).
+         barOccupancy = Mth.clamp(barOccupancy, 0.0F, 1.0F);
          int barWidth = Mth.ceil(barOccupancy * 38.0F);
-         int barColor = this.barColor.get(content.weight().floatValue(), delta);
+         int barColor = this.barColor.get(barOccupancy, delta);
          context.fill(x0 + this.imageWidth - 46, y0 + 6, x0 + this.imageWidth - 46 + barWidth, y0 + 14, barColor);
       }
 
