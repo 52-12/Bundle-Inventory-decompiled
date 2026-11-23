@@ -207,3 +207,102 @@ mod.mc_compat = "[26.3,26.4)"
 java.release = "25"
 deps.neoforge = "26.3.0.115"
 deps.neoforge_range = "[26.3.0.115,26.4)"
+
+# ---------------------------------------------------------------- forge ----
+# Forge pins from https://files.minecraftforge.net/.../promotions_slim.json
+# (recommended/latest per line, checked 2026-11-22). Forge skipped 1.21.2.
+# Each group's jar compiles against its lowest member; deps.forge_spec is the
+# FML loader spec major used in mods.toml; deps.eventbus_validator matches the
+# official MDK of that line (empty = that MDK ships none).
+
+["1.21.3-forge"]
+sources.dir = "1.21.2-1.21.3"
+mod.version = "1.6.0"
+mod.mc_label = "1.21.3"
+mod.mc_compat = "[1.21.3,1.21.4)"
+java.release = "21"
+deps.forge = "53.1.16"
+deps.forge_spec = "53"
+deps.eventbus_validator = ""
+
+["1.21.4-forge"]
+sources.dir = "1.21.4"
+mod.version = "1.6.1"
+mod.mc_label = "1.21.4"
+mod.mc_compat = "[1.21.4,1.21.5)"
+java.release = "21"
+deps.forge = "54.1.22"
+deps.forge_spec = "54"
+deps.eventbus_validator = ""
+
+["1.21.5-forge"]
+sources.dir = "1.21.5"
+mod.version = "1.7.1"
+mod.mc_label = "1.21.5"
+mod.mc_compat = "[1.21.5,1.21.6)"
+java.release = "21"
+deps.forge = "55.1.18"
+deps.forge_spec = "55"
+deps.eventbus_validator = ""
+
+["1.21.6-1.21.8-forge"]
+sources.dir = "1.21.6-1.21.8"
+mod.version = "1.7.2"
+mod.mc_label = "1.21.6-1.21.8"
+mod.mc_compat = "[1.21.6,1.21.9)"
+java.release = "21"
+deps.forge = "56.0.9"
+deps.forge_spec = "56"
+# ForgeGradle 6 era (see settings.gradle).
+deps.eventbus_validator = "7.0-beta.10"
+
+["1.21.9-1.21.10-forge"]
+sources.dir = "1.21.9-1.21.10"
+mod.version = "1.7.3"
+mod.mc_label = "1.21.9-1.21.10"
+mod.mc_compat = "[1.21.9,1.21.11)"
+java.release = "21"
+deps.forge = "59.0.5"
+deps.forge_spec = "59"
+# ForgeGradle 6 era (see settings.gradle).
+deps.eventbus_validator = "7.0-beta.10"
+
+["1.21.11-forge"]
+sources.dir = "1.21.11"
+mod.version = "1.7.3"
+mod.mc_label = "1.21.11"
+mod.mc_compat = "[1.21.11,1.22)"
+java.release = "21"
+deps.forge = "61.2.4"
+deps.forge_spec = "61"
+deps.eventbus_validator = "7.0.5"
+
+["26.1-26.1.2-forge"]
+sources.dir = "26.1-26.1.2"
+mod.version = "1.7.3"
+mod.mc_label = "26.1-26.1.2"
+mod.mc_compat = "[26.1,26.2)"
+java.release = "25"
+deps.forge = "62.0.9"
+deps.forge_spec = "62"
+deps.eventbus_validator = "7.0.1"
+
+["26.2-forge"]
+sources.dir = "26.2"
+mod.version = "1.7.3"
+mod.mc_label = "26.2"
+mod.mc_compat = "[26.2,26.3)"
+java.release = "25"
+deps.forge = "65.1.5"
+deps.forge_spec = "65"
+deps.eventbus_validator = "7.0.5"
+
+["26.3-forge"]
+sources.dir = "26.3"
+mod.version = "1.7.3"
+mod.mc_label = "26.3"
+mod.mc_compat = "[26.3,26.4)"
+java.release = "25"
+deps.forge = "66.1.9"
+deps.forge_spec = "66"
+deps.eventbus_validator = "7.0.6"

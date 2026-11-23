@@ -5,8 +5,8 @@ Socolio, All Rights Reserved) for **every Minecraft version that has the
 scrollable bundle item — 1.21.2 (Bundles of Bravery) through 26.3 — on both
 Fabric and NeoForge**, rebuilt from the author's own published builds.
 
-One jar per **release group** — the biggest Minecraft span each loader can
-honestly run a single jar on:
+One jar per **release group** per loader — the biggest Minecraft span each
+loader can honestly run a single jar on:
 
 **Fabric (9 jars)**
 
@@ -22,12 +22,16 @@ honestly run a single jar on:
 | 26.2 | 1.7.3 | 26.3 moved `RenderPipeline` + changed `asMutable`/`isKeyDown` |
 | 26.3 | 1.7.3 | — |
 
-**NeoForge (9 jars)** — the same Minecraft walls apply; NeoForge has no
-1.21.2 line (two abandoned betas only). Quilt runs the Fabric jars natively
-(the mod uses no Fabric API, and its `fabricloader >=0.16.x` floor is well
-under Quilt's reported 0.19.5), so no separate Quilt build exists — verify
-with one playtest on Quilt. Forge skipped 1.21.2 as well; its builds for
-1.21.3+ are being added.
+**NeoForge (9 jars)** and **Forge (9 jars)** — the same Minecraft walls apply.
+NeoForge has no 1.21.2 line (two abandoned betas only) and Forge skipped 1.21.2
+as well; Forge pins come from its own promotions file (53.1.16 … 66.1.9), with
+two dev-toolchain eras: the 1.21.6–1.21.10 Forge groups build with
+ForgeGradle 6 (matching those lines' official MDKs) and everything else with
+ForgeGradle 7. Quilt runs the Fabric jars natively (the mod uses no Fabric
+API, and its `fabricloader >=0.16.x` floor is well under Quilt's reported
+0.19.5), so no separate Quilt build exists — verify with one playtest on
+Quilt. No other loader has builds for any Minecraft version that has the
+bundle item.
 
 Each jar reports honest provenance, e.g. `BundleInventory-Fabric-1.7.2+mc1.21.6-1.21.8.jar`
 is a recompile of official build **1.7.2** for **Minecraft 1.21.6–1.21.8**,
@@ -70,15 +74,19 @@ src/versions/<era>/
                         Loom remaps it to intermediary in the jar)
   neoforge/java/        NeoForge entrypoint (@Mod, dist=CLIENT)
   neoforge/templates/   neoforge.mods.toml template
-  neoforge/resources/   access transformer derived from the access widener
+  neoforge/resources/   access transformer + pack.mcmeta
+  forge/java/           Forge entrypoint (@Mod, mods.toml clientSideOnly)
+  forge/templates/      mods.toml template
+  forge/resources/      access transformer + pack.mcmeta
   mixins/               the official mixin config
   packaging/            icon, language file, textures from the official jar
 ```
 
 The build is driven by [Stonecutter](https://stonecutter.kikugie.dev/) with
-[loom-back-compat](https://codeberg.org/KikuGie/loom-back-compat) (Fabric) and
-[ModDevGradle](https://github.com/neoforged/ModDevGradle) (NeoForge); per-node
-coordinates live in `stonecutter.properties.toml`.
+[loom-back-compat](https://codeberg.org/KikuGie/loom-back-compat) (Fabric),
+[ModDevGradle](https://github.com/neoforged/ModDevGradle) (NeoForge) and
+ForgeGradle 6/7 (Forge); per-node coordinates live in
+`stonecutter.properties.toml`.
 
 ## Building
 
@@ -86,16 +94,18 @@ Requires **JDK 25 to run Gradle** (Stonecutter 0.10). The 1.21.x groups compile
 with a Java 21 toolchain that Gradle auto-provisions.
 
 ```bash
-# Everything (18 release groups: 9 Fabric + 9 NeoForge).
+# Everything (27 release groups: 9 Fabric + 9 NeoForge + 9 Forge).
 #
-# The FIRST build of a NeoForge group runs its NeoForm pipeline (Minecraft is
-# decompiled for that version), which is heavy. Build sequentially to keep
-# memory bounded; everything is cached from the second run on.
+# The FIRST build of a NeoForge group runs its NeoForm pipeline and the FIRST
+# build of a Forge group its ForgeGradle setup (Minecraft is decompiled for
+# that version), which is heavy. Build sequentially to keep memory bounded;
+# everything is cached from the second run on.
 ./gradlew build --no-parallel
 
 # One group:
 ./gradlew :1.21.4-fabric:build
 ./gradlew :26.3-neoforge:build
+./gradlew :26.2-forge:build
 
 # Collect a group's jar into build/libs:
 ./gradlew :26.3-fabric:buildAndCollect
@@ -123,9 +133,13 @@ Kept deliberately minimal, and all mechanical:
 - **Decompiler artifacts.** Mixin classes cast themselves through
   `(Object)` (`(AbstractContainerScreen)(Object)this`) — the cast the
   decompiler dropped and Mixin needs to compile.
-- **NeoForge config screen.** The Cloth Config integration is Fabric-only, so
-  the NeoForge builds run on the mod's built-in default config (6 rows,
-  sounds on, open-bundle highlight on). Everything else works identically.
+- **NeoForge and Forge config screens.** The Cloth Config integration is
+  Fabric-only, so the NeoForge and Forge builds run on the mod's built-in
+  default config (6 rows, sounds on, open-bundle highlight on). Everything
+  else works identically. Both declare the mod client-only (NeoForge
+  `dist=CLIENT` entrypoint; Forge `clientSideOnly=true` in mods.toml), and
+  their jars carry the `pack.mcmeta` those loaders require (copied from each
+  line's official MDK).
 - **26.1 / 26.1.1 / 26.1.2.** The author never published a 26.1 build; these
   nodes compile the official 26.2 source with the one 26.1 difference applied
   (`Minecraft.screen` field instead of the 26.2 `Minecraft.gui.screen()`

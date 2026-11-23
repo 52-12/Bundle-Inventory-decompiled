@@ -57,6 +57,21 @@ def neoforgeGroups = [
         '26.2-neoforge'         : '26.2',
         '26.3-neoforge'         : '26.3',
 ]
+// Forge skipped 1.21.2 as well. Two dev-toolchain eras: the 1.21.6-1.21.10
+// MDKs still pin ForgeGradle 6, everything else pins ForgeGradle 7.
+def forgeFg7Groups = [
+        '1.21.3-forge'       : '1.21.3',
+        '1.21.4-forge'       : '1.21.4',
+        '1.21.5-forge'       : '1.21.5',
+        '1.21.11-forge'      : '1.21.11',
+        '26.1-26.1.2-forge'  : '26.1',
+        '26.2-forge'         : '26.2',
+        '26.3-forge'         : '26.3',
+]
+def forgeFg6Groups = [
+        '1.21.6-1.21.8-forge': '1.21.6',
+        '1.21.9-1.21.10-forge': '1.21.9',
+]
 
 stonecutter {
     kotlinController = false
@@ -64,6 +79,8 @@ stonecutter {
     create(rootProject) {
         versions(fabricGroups).buildscript('fabric.build.gradle')
         versions(neoforgeGroups).buildscript('neoforge.build.gradle')
+        versions(forgeFg7Groups).buildscript('forge-fg7.build.gradle')
+        versions(forgeFg6Groups).buildscript('forge-fg6.build.gradle')
         // The node whose directory state is what lives in git.
         vcsVersion = '26.3-fabric'
     }

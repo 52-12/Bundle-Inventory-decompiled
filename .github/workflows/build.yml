@@ -11,6 +11,8 @@ on:
       - 'stonecutter.gradle'
       - 'fabric.build.gradle'
       - 'neoforge.build.gradle'
+      - 'forge-fg6.build.gradle'
+      - 'forge-fg7.build.gradle'
       - 'gradle/**'
       - 'gradlew'
       - 'gradlew.bat'
@@ -19,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       node:
-        description: 'Single node to build (e.g. 26.3-fabric or 1.21.4-neoforge). Leave empty for all nodes.'
+        description: 'Single group to build (e.g. 26.3-fabric, 1.21.4-neoforge or 26.2-forge). Leave empty for all groups.'
         required: false
         default: ''
         type: string

@@ -1,0 +1,131 @@
+plugins {
+    // ForgeGradle 7 — the dev plugin of the official Forge MDK for the
+    // 1.21.3-1.21.5, 1.21.11 and 26.x lines.
+    // https://github.com/MinecraftForge/MinecraftForge (mdk/build.gradle per branch)
+    id 'net.minecraftforge.gradle' version '7.0.40'
+}
+
+// Each Forge node compiles the same Mojang-named game code as the Fabric and
+// NeoForge nodes for its Minecraft version (src/versions/<era>/common,
+// decompiled from the official Bundle Inventory build for that line), plus
+// the Forge glue in src/versions/<era>/forge.
+
+// NOTE: Stonecutter manages the project identity; no `group` here.
+// One jar per release group, compiled against the group's lowest member and
+// declaring the group's whole range (see stonecutter.properties.toml).
+version = "${property('mod.version')}+mc${property('mod.mc_label')}"
+base {
+    archivesName = 'BundleInventory-Forge'
+}
+
+def eraDir = "${rootDir}/src/versions/${property('sources.dir')}"
+def javaRelease = Integer.parseInt(property('java.release') as String)
+def mcCompat = property('mod.mc_compat') as String
+def forgeVersion = property('deps.forge') as String
+def loaderSpec = property('deps.forge_spec') as String
+def eventbusValidator = property('deps.eventbus_validator')
+
+sourceSets {
+    main {
+        java.setSrcDirs(List.of("${eraDir}/common/java", "${eraDir}/forge/java"))
+        resources.setSrcDirs(List.of(
+                "${eraDir}/forge/resources",
+                "${eraDir}/mixins",
+                "${eraDir}/packaging",
+        ))
+    }
+}
+
+minecraft {
+    // Picks up META-INF/accesstransformer.cfg from the source sets and applies
+    // it to the Minecraft dependency (per the official AT example).
+    accessTransformer = true
+
+    // 1.21.x is still obfuscated upstream; Forge runs official (Mojang) names
+    // at runtime, so no reobfuscation step exists on any of our versions.
+    if (stonecutter.current.version.startsWith('26.') == false) {
+        mappings channel: 'official', version: stonecutter.current.version
+    }
+
+    runs {
+        configureEach {
+            workingDir = file("run/${stonecutter.current.project}")
+            args '--mixin.config=bundleinventory.client.mixins.json'
+        }
+        register('client')
+    }
+}
+
+repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+    mavenCentral()
+}
+
+dependencies {
+    implementation minecraft.dependency("net.minecraftforge:forge:${stonecutter.current.version}-${forgeVersion}")
+
+    // Compile-time EventBus validation, matching each line's official MDK.
+    if (eventbusValidator != '') {
+        annotationProcessor "net.minecraftforge:eventbus-validator:${eventbusValidator}"
+    }
+
+    // Mixin annotation processing, matching the official mixins example.
+    annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.toVersion(javaRelease)
+    targetCompatibility = JavaVersion.toVersion(javaRelease)
+
+    toolchain {
+        // Temurin (Eclipse Adoptium): the vendor the Fabric templates and CI
+        // use. Gradle auto-provisions it via foojay if it is missing.
+        vendor = JvmVendorSpec.ADOPTIUM
+        languageVersion = JavaLanguageVersion.of(javaRelease)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = javaRelease
+}
+
+// Expand the mods.toml template the way the NeoForge build does, so no
+// unexpanded metadata ever sits in a resource directory.
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def replaceProperties = [
+            'version'   : project.version.toString(),
+            // Minecraft / Forge dependency ranges covering every member of the
+            // release group.
+            'minecraft' : mcCompat,
+            'loaderRange': "[${loaderSpec},)",
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "${eraDir}/forge/templates"
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+
+tasks.withType(Jar).configureEach {
+    // The official Forge route for mixin configs (the mods.toml of the
+    // Forge MDK has no [[mixins]] section).
+    manifest {
+        attributes 'MixinConfigs': 'bundleinventory.client.mixins.json'
+    }
+    from(rootProject.file('LICENSE_BundleInventory-Fabric')) {
+        rename { "${it}-bundleinventory" }
+    }
+}
+
+// Builds the mod jar for the current node and collects it into `build/libs/`.
+tasks.register('buildAndCollect', Copy) {
+    group = 'build'
+    description = 'Builds mod jars and copies results to `build/libs/`'
+    dependsOn 'build'
+    from(tasks.named('jar').flatMap { it.archiveFile }, tasks.named('sourcesJar').flatMap { it.archiveFile })
+    into(rootProject.layout.buildDirectory.dir('libs'))
+}

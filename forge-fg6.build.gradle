@@ -1,0 +1,136 @@
+plugins {
+    // ForgeGradle 6 — the dev plugin of the official Forge MDK for the
+    // 1.21.6-1.21.10 lines (their MDKs still pin the 6.x template).
+    // https://github.com/MinecraftForge/MinecraftForge (mdk/build.gradle per branch)
+    id 'net.minecraftforge.gradle' version '[6.0.36,6.2)'
+}
+
+// Same sources and grouping model as the other Forge nodes; only the dev
+// plugin generation differs (see forge-fg7.build.gradle).
+
+// NOTE: Stonecutter manages the project identity; no `group` here.
+version = "${property('mod.version')}+mc${property('mod.mc_label')}"
+base {
+    archivesName = 'BundleInventory-Forge'
+}
+
+def eraDir = "${rootDir}/src/versions/${property('sources.dir')}"
+def javaRelease = Integer.parseInt(property('java.release') as String)
+def mcCompat = property('mod.mc_compat') as String
+def forgeVersion = property('deps.forge') as String
+def loaderSpec = property('deps.forge_spec') as String
+
+sourceSets {
+    main {
+        java.setSrcDirs(List.of("${eraDir}/common/java", "${eraDir}/forge/java"))
+        resources.setSrcDirs(List.of(
+                "${eraDir}/forge/resources",
+                "${eraDir}/mixins",
+                "${eraDir}/packaging",
+        ))
+    }
+}
+
+minecraft {
+    mappings channel: 'official', version: stonecutter.current.version
+
+    // Forge 1.20.6+ runs official (Mojang) names at runtime, so nothing is
+    // reobfuscated from official to SRG (comment from the official MDK).
+    reobf = false
+
+    // The AT file also lives at META-INF/accesstransformer.cfg in the final
+    // jar; this wires the dev-time copy.
+    accessTransformer = file("${eraDir}/forge/resources/META-INF/accesstransformer.cfg")
+
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory = file("run/${stonecutter.current.project}")
+            property 'eventbus.api.strictRuntimeChecks', 'true'
+            args '--mixin.config=bundleinventory.client.mixins.json'
+        }
+        client {
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'Forge'
+        url = 'https://maven.minecraftforge.net'
+    }
+    maven {
+        name = 'Minecraft libraries'
+        url = 'https://libraries.minecraft.net'
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Sponge'
+                url = 'https://repo.spongepowered.org/repository/maven-public'
+            }
+        }
+        filter {
+            includeGroupAndSubgroups('org.spongepowered')
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${stonecutter.current.version}-${forgeVersion}"
+
+    // Forge 1.21.6+ uses EventBus 7; the compile-time validator matches the
+    // official MDK for these lines.
+    annotationProcessor 'net.minecraftforge:eventbus-validator:7.0-beta.10'
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.toVersion(javaRelease)
+    targetCompatibility = JavaVersion.toVersion(javaRelease)
+
+    toolchain {
+        // Temurin (Eclipse Adoptium): the vendor the Fabric templates and CI
+        // use. Gradle auto-provisions it via foojay if it is missing.
+        vendor = JvmVendorSpec.ADOPTIUM
+        languageVersion = JavaLanguageVersion.of(javaRelease)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = javaRelease
+}
+
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def replaceProperties = [
+            'version'   : project.version.toString(),
+            'minecraft' : mcCompat,
+            'loaderRange': "[${loaderSpec},)",
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "${eraDir}/forge/templates"
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+
+tasks.withType(Jar).configureEach {
+    manifest {
+        attributes 'MixinConfigs': 'bundleinventory.client.mixins.json'
+    }
+    from(rootProject.file('LICENSE_BundleInventory-Fabric')) {
+        rename { "${it}-bundleinventory" }
+    }
+}
+
+// Builds the mod jar for the current node and collects it into `build/libs/`.
+tasks.register('buildAndCollect', Copy) {
+    group = 'build'
+    description = 'Builds mod jars and copies results to `build/libs/`'
+    dependsOn 'build'
+    from(tasks.named('jar').flatMap { it.archiveFile }, tasks.named('sourcesJar').flatMap { it.archiveFile })
+    into(rootProject.layout.buildDirectory.dir('libs'))
+}
