@@ -235,10 +235,12 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
                return;
             }
 
-            int canAddCount = this.checkItemCanBeAddedToBundle(cursorStack);
-            if (canAddCount <= 0) {
-               playInsertFailSound(player);
-               return;
+            if (BundleInventoryMod.config().clientSideItemInsertionChecks()) {
+               int canAddCount = this.checkItemCanBeAddedToBundle(cursorStack);
+               if (canAddCount <= 0) {
+                  playInsertFailSound(player);
+                  return;
+               }
             }
 
             robot.clickBundle(ClickAction.PRIMARY);
@@ -266,10 +268,13 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
             return false;
          }
 
-         int canAddCount = this.checkItemCanBeAddedToBundle(stackToMove);
-         if (canAddCount <= 0) {
-            playInsertFailSound(player);
-            return true;
+         int canAddCount = stackToMove.getCount();
+         if (BundleInventoryMod.config().clientSideItemInsertionChecks()) {
+            canAddCount = this.checkItemCanBeAddedToBundle(stackToMove);
+            if (canAddCount <= 0) {
+               playInsertFailSound(player);
+               return true;
+            }
          }
 
          robot.clickSlot(ClickAction.PRIMARY, slotId);
@@ -490,7 +495,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          this.networkHandler
             .send(
                new ServerboundContainerClickPacket(
-                  BundleInventoryHandler.this.containerId, -1, slotId, button, ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap()
+                  BundleInventoryHandler.this.containerId, this.player.containerMenu.getStateId(), slotId, button, ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap()
                )
             );
          return this;

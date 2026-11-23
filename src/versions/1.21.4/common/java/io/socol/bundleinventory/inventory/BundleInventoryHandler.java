@@ -257,10 +257,12 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
             robot.clickBundle(ClickAction.SECONDARY);
             playRemoveOneSound(player);
          } else {
-            int canAddCount = this.checkStackCanBeAddedToBundle(cursorStack);
-            if (canAddCount <= 0) {
-               playInsertFailSound(player);
-               return;
+            if (BundleInventoryMod.config().clientSideItemInsertionChecks()) {
+               int canAddCount = this.checkStackCanBeAddedToBundle(cursorStack);
+               if (canAddCount <= 0) {
+                  playInsertFailSound(player);
+                  return;
+               }
             }
 
             boolean insertingBundle = cursorStack.getItem() instanceof BundleItem;
@@ -292,10 +294,13 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          return true;
       } else {
          boolean movingBundle = stackToMove.getItem() instanceof BundleItem;
-         int canAddCount = this.checkStackCanBeAddedToBundle(stackToMove);
-         if (canAddCount <= 0) {
-            playInsertFailSound(player);
-            return true;
+         int canAddCount = stackToMove.getCount();
+         if (BundleInventoryMod.config().clientSideItemInsertionChecks()) {
+            canAddCount = this.checkStackCanBeAddedToBundle(stackToMove);
+            if (canAddCount <= 0) {
+               playInsertFailSound(player);
+               return true;
+            }
          }
 
          BundleInventoryHandler.Robot robot = this.createRobot(player);
@@ -527,7 +532,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          this.networkHandler
             .send(
                new ServerboundContainerClickPacket(
-                  BundleInventoryHandler.this.containerId, -1, slotId, button, ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap()
+                  BundleInventoryHandler.this.containerId, this.player.containerMenu.getStateId(), slotId, button, ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap()
                )
             );
          return this;

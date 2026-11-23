@@ -124,16 +124,29 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
          int barWidth = 55;
          float barOccupancy = Mth.lerp(delta, this.prevBarOccupancy, this.currentBarOccupancy);
          barOccupancy = Mth.clamp(barOccupancy, 0.0F, 1.0F);
-         int barProgress = Mth.ceil(barOccupancy * barWidth);
-         BossBarColor barColor = BossBarColor.BLUE;
-         if (barOccupancy > 0.9) {
-            barColor = BossBarColor.RED;
-         } else if (barOccupancy > 0.7) {
-            barColor = BossBarColor.YELLOW;
-         }
+         if (BundleInventoryMod.config().useBossBarFullness()) {
+            int barProgress = Mth.ceil(barOccupancy * barWidth);
+            BossBarColor barColor = BossBarColor.BLUE;
+            if (barOccupancy > 0.9) {
+               barColor = BossBarColor.RED;
+            } else if (barOccupancy > 0.7) {
+               barColor = BossBarColor.YELLOW;
+            }
 
-         drawer.move(this.imageWidth - 7 - barWidth, 8).drawBossBar(barWidth, barProgress, barColor, BossBarOverlay.NOTCHED_10);
+            drawer.move(this.imageWidth - 7 - barWidth, 8).drawBossBar(barWidth, barProgress, barColor, BossBarOverlay.NOTCHED_10);
+         } else {
+            this.drawSmoothBar(context, x0 + this.imageWidth - 7 - barWidth, y0 + 8, barWidth, barOccupancy);
+         }
       }
+   }
+
+   private void drawSmoothBar(GuiGraphics context, int x, int y, int width, float occupancy) {
+      float clamped = Mth.clamp(occupancy, 0.0F, 1.0F);
+      int progress = Mth.ceil(clamped * width);
+      int color = clamped > 0.9F ? 0xFFFF5555 : (clamped > 0.7F ? 0xFFFFFF55 : 0xFF55FF55);
+      context.fill(x - 1, y - 1, x + width + 1, y + 6, 0xFF000000);
+      context.fill(x, y, x + width, y + 5, 0xFF3A3A3A);
+      context.fill(x, y, x + progress, y + 5, color);
    }
 
    protected void renderLabels(GuiGraphics context, int mouseX, int mouseY) {

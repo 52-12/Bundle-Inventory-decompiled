@@ -30,4 +30,14 @@ public class BundleInventoryDefaultConfig implements BundleInventoryConfig {
    public boolean showEquipmentSlotsInBundleInventory() {
       return false;
    }
+
+   @Override
+   public boolean useBossBarFullness() {
+      return true;
+   }
+
+   @Override
+   public boolean clientSideItemInsertionChecks() {
+      return true;
+   }
 }

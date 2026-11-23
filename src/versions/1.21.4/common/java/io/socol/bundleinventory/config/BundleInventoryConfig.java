@@ -11,6 +11,9 @@ public interface BundleInventoryConfig {
    String INDICATE_OPEN_BUNDLE = "Should highlight open Bundle by rendering it differently";
    String SHOW_EQUIPMENT_SLOTS = "Show armor & second hand slots in Bundle inventory";
 
+   String CLIENT_SIDE_ITEM_INSERTION_CHECKS = "Do client-side checks of bundle occupancy on item insertion";
+   String USE_BOSS_BAR_FULLNESS = "Use the boss-bar style fullness indicator instead of the smooth bar";
+
    Function<Screen, Screen> getScreenFactory();
 
    int bundleInventoryVisibleRows();
@@ -20,4 +23,8 @@ public interface BundleInventoryConfig {
    boolean indicateOpenBundle();
 
    boolean showEquipmentSlotsInBundleInventory();
+
+   boolean useBossBarFullness();
+
+   boolean clientSideItemInsertionChecks();
 }

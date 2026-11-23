@@ -87,13 +87,34 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
 
       BundleContents content = ((BundleInventoryHandler)this.menu).getBundleInventory().getBundleContent();
       if (content != null) {
-         float barOccupancy = Mth.lerp(delta, this.prevBarOccupancy, this.currentBarOccupancy);
-         int barWidth = Mth.ceil(barOccupancy * 38.0F);
-         int barColor = this.barColor.get(content.weight().floatValue(), delta);
-         context.fill(x0 + this.imageWidth - 46, y0 + 6, x0 + this.imageWidth - 46 + barWidth, y0 + 14, barColor);
+         if (BundleInventoryMod.config().useBossBarFullness()) {
+            this.drawBossBar(context, x0 + this.imageWidth - 62, y0 + 8, content.weight().floatValue());
+         } else {
+            float barOccupancy = Mth.lerp(delta, this.prevBarOccupancy, this.currentBarOccupancy);
+            int barWidth = Mth.ceil(barOccupancy * 38.0F);
+            int barColor = this.barColor.get(content.weight().floatValue(), delta);
+            context.fill(x0 + this.imageWidth - 46, y0 + 6, x0 + this.imageWidth - 46 + barWidth, y0 + 14, barColor);
+         }
       }
 
-      context.blit(RenderType::guiTextured, TEXTURE, x0 + this.imageWidth - 47, y0 + 5, 176.0F, 0.0F, 40, 10, 512, 512);
+      if (!BundleInventoryMod.config().useBossBarFullness()) {
+         context.blit(RenderType::guiTextured, TEXTURE, x0 + this.imageWidth - 47, y0 + 5, 176.0F, 0.0F, 40, 10, 512, 512);
+      }
+   }
+
+   private void drawBossBar(GuiGraphics context, int x, int y, float occupancy) {
+      float clamped = Mth.clamp(occupancy, 0.0F, 1.0F);
+      int width = 55;
+      int height = 5;
+      int progress = Mth.ceil(clamped * width);
+      int color = clamped > 0.9F ? 0xFFFF5555 : (clamped > 0.7F ? 0xFFFFFF55 : 0xFF00A8FF);
+      context.fill(x - 1, y - 1, x + width + 1, y + height + 1, 0xFF000000);
+      context.fill(x, y, x + width, y + height, 0xFF3A3A3A);
+      context.fill(x, y, x + progress, y + height, color);
+      for (int i = 1; i < 10; i++) {
+         int notch = x + width * i / 10;
+         context.fill(notch, y, notch + 1, y + height, 0x40000000);
+      }
    }
 
    protected void renderLabels(GuiGraphics context, int mouseX, int mouseY) {

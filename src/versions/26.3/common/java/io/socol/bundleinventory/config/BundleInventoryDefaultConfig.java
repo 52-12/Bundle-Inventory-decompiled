@@ -38,4 +38,9 @@ public class BundleInventoryDefaultConfig implements BundleInventoryConfig {
    public boolean clientSideItemInsertionChecks() {
       return true;
    }
+
+   @Override
+   public boolean useBossBarFullness() {
+      return true;
+   }
 }

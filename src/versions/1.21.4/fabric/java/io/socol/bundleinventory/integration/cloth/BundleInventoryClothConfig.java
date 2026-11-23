@@ -22,6 +22,10 @@ public class BundleInventoryClothConfig implements ConfigData, BundleInventoryCo
    boolean indicateOpenBundle = BundleInventoryDefaultConfig.INSTANCE.indicateOpenBundle();
    @Comment("Show armor & second hand slots in Bundle inventory")
    boolean showEquipmentSlotsInBundleInventory = BundleInventoryDefaultConfig.INSTANCE.showEquipmentSlotsInBundleInventory();
+   @Comment("Use the boss-bar style fullness indicator instead of the smooth bar")
+   boolean useBossBarFullness = BundleInventoryDefaultConfig.INSTANCE.useBossBarFullness();
+   @Comment("Do client-side checks of bundle occupancy on item insertion")
+   boolean clientSideItemInsertionChecks = BundleInventoryDefaultConfig.INSTANCE.clientSideItemInsertionChecks();
 
    public static BundleInventoryConfig create() {
       AutoConfig.register(BundleInventoryClothConfig.class, JanksonConfigSerializer::new);
@@ -51,5 +55,15 @@ public class BundleInventoryClothConfig implements ConfigData, BundleInventoryCo
    @Override
    public boolean showEquipmentSlotsInBundleInventory() {
       return this.showEquipmentSlotsInBundleInventory;
+   }
+
+   @Override
+   public boolean useBossBarFullness() {
+      return this.useBossBarFullness;
+   }
+
+   @Override
+   public boolean clientSideItemInsertionChecks() {
+      return this.clientSideItemInsertionChecks;
    }
 }

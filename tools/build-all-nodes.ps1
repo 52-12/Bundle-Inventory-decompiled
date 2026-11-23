@@ -25,9 +25,8 @@ $defaultOrder = @(
     '1.21.5-forge', '1.21.4-forge', '1.21.3-forge',
     '1.21.9-1.21.10-forge', '1.21.6-1.21.8-forge',
     '26.3-neoforge', '26.2-neoforge', '26.1-26.1.2-neoforge',
-    '1.21.11-neoforge', '1.21.10-neoforge', '1.21.9-neoforge',
-    '1.21.8-neoforge', '1.21.7-neoforge', '1.21.6-neoforge',
-    '1.21.5-neoforge', '1.21.4-neoforge', '1.21.3-neoforge'
+    '1.21.11-neoforge', '1.21.9-1.21.10-neoforge',
+    '1.21.6-1.21.8-neoforge', '1.21.5-neoforge', '1.21.4-neoforge', '1.21.3-neoforge'
 )
 if ($Nodes.Count -gt 0) { $defaultOrder = $Nodes }
 
