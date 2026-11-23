@@ -247,16 +247,29 @@ def generateMappings = tasks.register('generateMappings') {
 
         // Scan our compiled classes: record their hierarchy and every Minecraft
         // member reference, including inherited calls whose owner is our class.
+        // Pass 1: record our own classes' hierarchy before resolving anything,
+        // otherwise the result depends on which class happened to be scanned
+        // first (e.g. Hooks referencing BundleInventoryScreen.getMenu).
+        def compiled = []
         sourceSets.main.output.classesDirs.each { clsDir ->
-            if (!clsDir.exists()) return
-            fileTree(clsDir).matching { include '**/*.class' }.each { f ->
-                def node = new org.objectweb.asm.tree.ClassNode()
-                new ClassReader(f.bytes).accept(node, 0)
-                def parents = []
-                if (node.superName != null) parents << node.superName
-                if (node.interfaces != null) parents.addAll(node.interfaces)
-                hierarchy[node.name] = parents
-                node.methods.each { mn ->
+            if (clsDir.exists()) {
+                fileTree(clsDir).matching { include '**/*.class' }.each { compiled << it }
+            }
+        }
+        compiled.each { f ->
+            def node = new org.objectweb.asm.tree.ClassNode()
+            new ClassReader(f.bytes).accept(node, org.objectweb.asm.ClassReader.SKIP_CODE)
+            def parents = []
+            if (node.superName != null) parents << node.superName
+            if (node.interfaces != null) parents.addAll(node.interfaces)
+            hierarchy[node.name] = parents
+        }
+
+        // Pass 2: resolve declarations, call sites and field accesses.
+        compiled.each { f ->
+            def node = new org.objectweb.asm.tree.ClassNode()
+            new ClassReader(f.bytes).accept(node, 0)
+            node.methods.each { mn ->
                     // declarations: overriding a game method must rename too
                     resolve(namedMethods, extraMethods, node.name, mn.name + mn.desc)
                     mn.instructions.each { insn ->
@@ -267,9 +280,8 @@ def generateMappings = tasks.register('generateMappings') {
                         }
                     }
                 }
-                node.fields.each { fn ->
-                    resolve(namedFields, extraFields, node.name, fn.name + ':' + fn.desc)
-                }
+            node.fields.each { fn ->
+                resolve(namedFields, extraFields, node.name, fn.name + ':' + fn.desc)
             }
         }
 
