@@ -5,18 +5,34 @@ Socolio, All Rights Reserved) for **every Minecraft version that has the
 scrollable bundle item — 1.21.2 (Bundles of Bravery) through 26.3 — on both
 Fabric and NeoForge**, rebuilt from the author's own published builds.
 
-One jar per Minecraft version per loader, produced from one repository:
+One jar per **release group** — the biggest Minecraft span each loader can
+honestly run a single jar on:
 
-| Minecraft | Fabric | NeoForge |
+**Fabric (9 jars)**
+
+| Jar covers | Official build decompiled | Why this is the biggest range |
 |---|---|---|
-| 1.21.2 | ✅ | — (NeoForge only ever shipped two abandoned betas for this line) |
-| 1.21.3 – 1.21.11 | ✅ | ✅ (21.6 / 21.7 / 21.9 lines are beta builds upstream too) |
-| 26.1 – 26.3 | ✅ | ✅ |
-| Forge | — | — (Forge's last target is 1.21.1, out of range) |
-| Quilt | runs the Fabric jars natively, no separate build | |
+| 1.21.2 – 1.21.3 | 1.6.0 | The author's own jar covered both |
+| 1.21.4 | 1.6.1 | Uses `skipNextRelease`, which 1.21.2 lacks |
+| 1.21.5 | 1.7.1 | 1.21.5 rewrote the container-click packet; 1.21.6 the GUI API |
+| 1.21.6 – 1.21.8 | 1.7.2 | The author's own jar covered all three |
+| 1.21.9 – 1.21.10 | 1.7.3 | The author's own jar covered both |
+| 1.21.11 | 1.7.3 | `Identifier` rename + mouse coords on `renderSlot` |
+| 26.1 – 26.1.2 | (26.2 source, adapted) | javap diff of every API the mod touches is empty across the line |
+| 26.2 | 1.7.3 | 26.3 moved `RenderPipeline` + changed `asMutable`/`isKeyDown` |
+| 26.3 | 1.7.3 | — |
 
-Each jar reports honest provenance, e.g. `BundleInventory-Fabric-1.6.0+mc1.21.2.jar`
-is a recompile of official build **1.6.0** for **Minecraft 1.21.2**.
+**NeoForge (9 jars)** — the same Minecraft walls apply; NeoForge has no
+1.21.2 line (two abandoned betas only) and no Forge releases exist for
+1.21.2+ at all. Quilt runs the Fabric jars natively.
+
+Each jar reports honest provenance, e.g. `BundleInventory-Fabric-1.7.2+mc1.21.6-1.21.8.jar`
+is a recompile of official build **1.7.2** for **Minecraft 1.21.6–1.21.8**,
+and declares exactly that range, so the loader never lets it run where it
+would crash. Grouping evidence, in short: the author's own jars spanned
+1.21.2–1.21.3 / 1.21.6–1.21.8 / 1.21.9–1.21.10; every member version
+compiled green against its era source; and the 26.1–26.1.2 span is verified
+by an empty API diff.
 
 ## How this works
 
@@ -63,27 +79,31 @@ coordinates live in `stonecutter.properties.toml`.
 
 ## Building
 
-Requires **JDK 25 to run Gradle** (Stonecutter 0.10). The 1.21.x nodes compile
+Requires **JDK 25 to run Gradle** (Stonecutter 0.10). The 1.21.x groups compile
 with a Java 21 toolchain that Gradle auto-provisions.
 
 ```bash
-# Everything (29 nodes: 15 Fabric + 14 NeoForge).
+# Everything (18 release groups: 9 Fabric + 9 NeoForge).
 #
-# The FIRST build of a NeoForge node runs its NeoForm pipeline (Minecraft is
+# The FIRST build of a NeoForge group runs its NeoForm pipeline (Minecraft is
 # decompiled for that version), which is heavy. Build sequentially to keep
 # memory bounded; everything is cached from the second run on.
 ./gradlew build --no-parallel
 
-# One node:
+# One group:
 ./gradlew :1.21.4-fabric:build
 ./gradlew :26.3-neoforge:build
 
-# Collect a node's jar into build/libs:
+# Collect a group's jar into build/libs:
 ./gradlew :26.3-fabric:buildAndCollect
 ```
 
-Jars land in `versions/<node>/build/libs/`, named
-`BundleInventory-<Loader>-<mod version>+mc<minecraft>.jar`.
+Jars land in `versions/<group>/build/libs/`, named
+`BundleInventory-<Loader>-<official mod version>+mc<versions>.jar`.
+Each group's jar is compiled against the group's **lowest** member and
+declares the whole range, so `runClient` also runs that lowest version; to
+dev-test another member, temporarily point the group at it in
+`settings.gradle`.
 
 ## Deviations from the official builds
 
@@ -107,8 +127,8 @@ Kept deliberately minimal, and all mechanical:
   nodes compile the official 26.2 source with the one 26.1 difference applied
   (`Minecraft.screen` field instead of the 26.2 `Minecraft.gui.screen()`
   accessor).
-- **Metadata.** `fabric.mod.json` declares the exact Minecraft version each jar
-  is built for (the official jars used broader ranges), and the NeoForge
+- **Metadata.** `fabric.mod.json` declares the exact Minecraft range each jar
+  covers (the official jars used broader ranges), and the NeoForge
   `neoforge.mods.toml` marks the mod client-only (`dist=CLIENT`,
   `displayTest="IGNORE_ALL_VERSION"`).
 

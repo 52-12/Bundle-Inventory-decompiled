@@ -14,7 +14,9 @@ plugins {
 // stonecutter.properties.toml.
 
 // NOTE: Stonecutter manages the project identity; no `group` here.
-version = "${property('mod.version')}+mc${stonecutter.current.version}"
+// One jar per release group, compiled against the group's lowest member and
+// declaring the group's whole range (see stonecutter.properties.toml).
+version = "${property('mod.version')}+mc${property('mod.mc_label')}"
 base {
     archivesName = 'BundleInventory-Fabric'
 }

@@ -11,7 +11,9 @@ plugins {
 // in src/versions/<era>/neoforge.
 
 // NOTE: Stonecutter manages the project identity; no `group` here.
-version = "${property('mod.version')}+mc${stonecutter.current.version}"
+// One jar per release group, compiled against the group's lowest member and
+// declaring the group's whole range (see stonecutter.properties.toml).
+version = "${property('mod.version')}+mc${property('mod.mc_label')}"
 base {
     archivesName = 'BundleInventory-NeoForge'
 }
@@ -20,6 +22,7 @@ def eraDir = "${rootDir}/src/versions/${property('sources.dir')}"
 def javaRelease = Integer.parseInt(property('java.release') as String)
 def mcCompat = property('mod.mc_compat') as String
 def neoVersion = property('deps.neoforge') as String
+def neoRange = property('deps.neoforge_range') as String
 
 sourceSets {
     main {
@@ -75,9 +78,11 @@ tasks.withType(JavaCompile).configureEach {
 // ModDevGradle can read fully-expanded metadata for its run configurations.
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     def replaceProperties = [
-            'version'  : project.version.toString(),
-            'minecraft': mcCompat,
-            'neoVersion': neoVersion,
+            'version'   : project.version.toString(),
+            // Minecraft / NeoForge dependency ranges covering every member of
+            // the release group.
+            'minecraft' : mcCompat,
+            'neoRange'  : neoRange,
             'loaderRange': '[1,)',
     ]
     inputs.properties replaceProperties

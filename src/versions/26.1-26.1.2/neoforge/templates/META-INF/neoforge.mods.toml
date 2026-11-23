@@ -17,13 +17,13 @@ config="bundleinventory.client.mixins.json"
 [[dependencies.bundleinventory]]
 modId="neoforge"
 type="required"
-versionRange="[${neoVersion},)"
+versionRange="${neoRange}"
 ordering="NONE"
 side="CLIENT"
 
 [[dependencies.bundleinventory]]
 modId="minecraft"
 type="required"
-versionRange="[${minecraft}]"
+versionRange="${minecraft}"
 ordering="NONE"
 side="CLIENT"

@@ -24,34 +24,46 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
-// Loader coverage, from the primary sources:
-//  - Fabric: every version below.
-//  - NeoForge: 1.21.3+ (its 1.21.2 line never got past two abandoned betas).
-//  - Forge: none in range (Forge's last target is 1.21.1).
-//  - Quilt: runs Fabric jars natively, no separate build.
-def fabricNodes = [
-        '1.21.2-fabric', '1.21.3-fabric', '1.21.4-fabric', '1.21.5-fabric',
-        '1.21.6-fabric', '1.21.7-fabric', '1.21.8-fabric',
-        '1.21.9-fabric', '1.21.10-fabric', '1.21.11-fabric',
-        '26.1-fabric', '26.1.1-fabric', '26.1.2-fabric', '26.2-fabric', '26.3-fabric',
+// Release groups: the biggest Minecraft span each loader can honestly run
+// one jar on, chosen from hard evidence (see README):
+//  - the author's own builds span 1.21.2-1.21.3, 1.21.6-1.21.8, 1.21.9-1.21.10;
+//  - every member version compiled green against its era source;
+//  - a javap diff of every API this mod touches is empty across 26.1-26.1.2.
+// 1.21.4 / 1.21.5 / 1.21.11 / 26.2 / 26.3 stay alone: their official sources
+// use APIs the neighbouring version does not have.
+// Node name -> representative Minecraft version (the lowest member), which
+// the jar is compiled against.
+def fabricGroups = [
+        '1.21.2-1.21.3-fabric': '1.21.2',
+        '1.21.4-fabric'       : '1.21.4',
+        '1.21.5-fabric'       : '1.21.5',
+        '1.21.6-1.21.8-fabric': '1.21.6',
+        '1.21.9-1.21.10-fabric': '1.21.9',
+        '1.21.11-fabric'      : '1.21.11',
+        '26.1-26.1.2-fabric'  : '26.1',
+        '26.2-fabric'         : '26.2',
+        '26.3-fabric'         : '26.3',
 ]
-def neoforgeNodes = [
-        '1.21.3-neoforge', '1.21.4-neoforge', '1.21.5-neoforge',
-        '1.21.6-neoforge', '1.21.7-neoforge', '1.21.8-neoforge',
-        '1.21.9-neoforge', '1.21.10-neoforge', '1.21.11-neoforge',
-        '26.1-neoforge', '26.1.1-neoforge', '26.1.2-neoforge', '26.2-neoforge', '26.3-neoforge',
+def neoforgeGroups = [
+        // No 1.21.2 node: NeoForge only ever shipped two abandoned betas for
+        // that line.
+        '1.21.3-neoforge'       : '1.21.3',
+        '1.21.4-neoforge'       : '1.21.4',
+        '1.21.5-neoforge'       : '1.21.5',
+        '1.21.6-1.21.8-neoforge': '1.21.6',
+        '1.21.9-1.21.10-neoforge': '1.21.9',
+        '1.21.11-neoforge'      : '1.21.11',
+        '26.1-26.1.2-neoforge'  : '26.1',
+        '26.2-neoforge'         : '26.2',
+        '26.3-neoforge'         : '26.3',
 ]
 
 stonecutter {
     kotlinController = false
 
     create(rootProject) {
-        // Node name -> logical Minecraft version, so `sc.current.version`
-        // stays a clean version number inside the build scripts.
-        versions(fabricNodes.collectEntries { [it, it.replaceFirst('-fabric$', '')] })
-                .buildscript('fabric.build.gradle')
-        versions(neoforgeNodes.collectEntries { [it, it.replaceFirst('-neoforge$', '')] })
-                .buildscript('neoforge.build.gradle')
+        versions(fabricGroups).buildscript('fabric.build.gradle')
+        versions(neoforgeGroups).buildscript('neoforge.build.gradle')
         // The node whose directory state is what lives in git.
         vcsVersion = '26.3-fabric'
     }
