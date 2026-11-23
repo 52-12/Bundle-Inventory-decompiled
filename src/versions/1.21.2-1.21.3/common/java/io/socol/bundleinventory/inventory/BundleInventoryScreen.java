@@ -105,15 +105,27 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
    private void drawBossBar(GuiGraphics context, int x, int y, float occupancy) {
       float clamped = Mth.clamp(occupancy, 0.0F, 1.0F);
       int width = 55;
-      int height = 5;
       int progress = Mth.ceil(clamped * width);
-      int color = clamped > 0.9F ? 0xFFFF5555 : (clamped > 0.7F ? 0xFFFFFF55 : 0xFF00A8FF);
-      context.fill(x - 1, y - 1, x + width + 1, y + height + 1, 0xFF000000);
-      context.fill(x, y, x + width, y + height, 0xFF3A3A3A);
-      context.fill(x, y, x + progress, y + height, color);
-      for (int i = 1; i < 10; i++) {
-         int notch = x + width * i / 10;
-         context.fill(notch, y, notch + 1, y + height, 0x40000000);
+      String color = clamped > 0.9F ? "red" : (clamped > 0.7F ? "yellow" : "blue");
+      ResourceLocation background = ResourceLocation.withDefaultNamespace("boss_bar/" + color + "_background");
+      ResourceLocation fill = ResourceLocation.withDefaultNamespace("boss_bar/" + color + "_progress");
+      ResourceLocation notchedBackground = ResourceLocation.withDefaultNamespace("boss_bar/notched_10_background");
+      ResourceLocation notchedFill = ResourceLocation.withDefaultNamespace("boss_bar/notched_10_progress");
+      this.blitBossSprite(context, background, x, y, width, width);
+      this.blitBossSprite(context, fill, x, y, width, progress);
+      this.blitBossSprite(context, notchedBackground, x, y, width, width);
+      this.blitBossSprite(context, notchedFill, x, y, width, progress);
+   }
+
+   private void blitBossSprite(GuiGraphics context, ResourceLocation sprite, int x, int y, int width, int progress) {
+      int first = Math.min(width - 5, progress);
+      if (first > 0) {
+         context.blitSprite(RenderType::guiTextured, sprite, 182, 5, 0, 0, x, y, first, 5);
+      }
+
+      int second = progress - (width - 5);
+      if (second > 0) {
+         context.blitSprite(RenderType::guiTextured, sprite, 182, 5, 177, 0, x + first, y, second, 5);
       }
    }
 
