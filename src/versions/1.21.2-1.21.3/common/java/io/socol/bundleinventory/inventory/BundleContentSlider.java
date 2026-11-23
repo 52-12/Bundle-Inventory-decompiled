@@ -1,6 +1,6 @@
 package io.socol.bundleinventory.inventory;
 
-import io.socol.bundleinventory.BundleInventoryMod;
+import io.socol.bundleinventory.util.UIDrawer;
 import java.util.function.DoubleConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,10 +9,8 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 public class BundleContentSlider extends AbstractWidget {
-   private static final ResourceLocation TEXTURE = BundleInventoryMod.id("textures/gui/bundle.png");
    private final DoubleConsumer valueConsumer;
    private double value;
 
@@ -22,14 +20,12 @@ public class BundleContentSlider extends AbstractWidget {
    }
 
    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
-      int u = 200;
       int dy = 1;
       if (this.value >= 0.0) {
          dy += (int)Math.round(this.value * (this.height - 17));
-         u = !this.isHovered() && !this.isFocused() ? 176 : 188;
       }
 
-      context.blit(RenderType::guiTextured, TEXTURE, this.getX() + 1, this.getY() + dy, u, 10.0F, 12, 15, 512, 512);
+      new UIDrawer(context).at(this.getX() + 1, this.getY() + dy).drawScroller(this.value >= 0.0);
    }
 
    protected void updateWidgetNarration(NarrationElementOutput builder) {

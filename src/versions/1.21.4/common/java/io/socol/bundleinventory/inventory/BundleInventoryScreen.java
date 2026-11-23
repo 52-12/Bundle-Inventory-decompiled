@@ -2,7 +2,7 @@ package io.socol.bundleinventory.inventory;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import io.socol.bundleinventory.BundleInventoryMod;
-import io.socol.bundleinventory.util.StepColor;
+import io.socol.bundleinventory.util.UIDrawer;
 import java.util.List;
 import java.util.Optional;
 import net.minecraft.client.Minecraft;
@@ -20,6 +20,8 @@ import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.world.BossEvent.BossBarColor;
+import net.minecraft.world.BossEvent.BossBarOverlay;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
@@ -31,13 +33,11 @@ import net.minecraft.world.item.component.BundleContents.Mutable;
 import org.jetbrains.annotations.Nullable;
 
 public class BundleInventoryScreen extends AbstractContainerScreen<BundleInventoryHandler> {
-   private static final ResourceLocation TEXTURE = BundleInventoryMod.id("textures/gui/bundle.png");
    private static final ResourceLocation SLOT_HIGHLIGHT_BACK_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_back");
    private static final ResourceLocation SLOT_HIGHLIGHT_FRONT_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_front");
    private static final int MAX_TITLE_WIDTH = 120;
    private final FormattedCharSequence trimmedTitle;
    private final boolean openInventoryOnClose;
-   private final StepColor barColor;
    private float currentBarOccupancy;
    private float prevBarOccupancy;
    private int scrollBarSelectedRow;
@@ -51,7 +51,6 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       this.imageWidth = 176;
       this.imageHeight = 114 + handler.getRowsVisible() * 18;
       this.inventoryLabelY = this.imageHeight - 94;
-      this.barColor = new StepColor(new float[]{0.75F, 0.9F, 1.0F, 2.0F}, new int[]{-13710223, -2379249, -1671646, -1618884});
       this.currentBarOccupancy = handler.getBundleInventory().getBundleContent().weight().floatValue();
       this.prevBarOccupancy = this.currentBarOccupancy;
    }
@@ -107,55 +106,47 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
    protected void renderBg(GuiGraphics context, float delta, int mouseX, int mouseY) {
       int x0 = (this.width - this.imageWidth) / 2;
       int y0 = (this.height - this.imageHeight) / 2;
-      context.blit(RenderType::guiTextured, TEXTURE, x0, y0, 0.0F, 0.0F, this.imageWidth, 35, 512, 512);
-      int h = 79 + ((BundleInventoryHandler)this.menu).getRowsVisible() * 18;
-      context.blit(RenderType::guiTextured, TEXTURE, x0, y0 + 35, 0.0F, 258 - h, this.imageWidth, h, 512, 512);
+      UIDrawer drawer = new UIDrawer(context).at(x0, y0);
+      drawer.drawResizablePlate(this.imageWidth, this.imageHeight);
+      drawer.move(7, 17).drawSlots(8, ((BundleInventoryHandler)this.menu).getRowsVisible());
+      drawer.move(7, this.imageHeight - 83).drawSlots(9, 3);
+      drawer.move(7, this.imageHeight - 25).drawSlots(9, 1);
+      drawer.move(155, 17).drawScrollerGroove(((BundleInventoryHandler)this.menu).getRowsVisible() * 18);
       if (BundleInventoryMod.config().showEquipmentSlotsInBundleInventory()) {
-         context.blit(RenderType::guiTextured, TEXTURE, x0 - 36, y0 + this.imageHeight - 108, 176.0F, 25.0F, 32, 108, 512, 512);
+         UIDrawer equipmentDrawer = drawer.move(-36, this.imageHeight - 108);
+         equipmentDrawer.drawResizablePlate(32, 108);
+         equipmentDrawer.move(7, 7).drawSlots(1, 4);
+         equipmentDrawer.move(7, 83).drawSlot();
       }
 
       BundleContents content = ((BundleInventoryHandler)this.menu).getBundleInventory().getBundleContent();
       if (content != null) {
+         int barWidth = 55;
+         float barOccupancy = Mth.lerp(delta, this.prevBarOccupancy, this.currentBarOccupancy);
+         barOccupancy = Mth.clamp(barOccupancy, 0.0F, 1.0F);
          if (BundleInventoryMod.config().useBossBarFullness()) {
-            this.drawBossBar(context, x0 + this.imageWidth - 62, y0 + 8, content.weight().floatValue());
+            int barProgress = Mth.ceil(barOccupancy * barWidth);
+            BossBarColor barColor = BossBarColor.BLUE;
+            if (barOccupancy > 0.9) {
+               barColor = BossBarColor.RED;
+            } else if (barOccupancy > 0.7) {
+               barColor = BossBarColor.YELLOW;
+            }
+
+            drawer.move(this.imageWidth - 7 - barWidth, 8).drawBossBar(barWidth, barProgress, barColor, BossBarOverlay.NOTCHED_10);
          } else {
-            float barOccupancy = Mth.lerp(delta, this.prevBarOccupancy, this.currentBarOccupancy);
-            int barWidth = Mth.ceil(barOccupancy * 38.0F);
-            int barColor = this.barColor.get(content.weight().floatValue(), delta);
-            context.fill(x0 + this.imageWidth - 46, y0 + 6, x0 + this.imageWidth - 46 + barWidth, y0 + 14, barColor);
+            this.drawSmoothBar(context, x0 + this.imageWidth - 7 - barWidth, y0 + 8, barWidth, barOccupancy);
          }
       }
-
-      if (!BundleInventoryMod.config().useBossBarFullness()) {
-         context.blit(RenderType::guiTextured, TEXTURE, x0 + this.imageWidth - 47, y0 + 5, 176.0F, 0.0F, 40, 10, 512, 512);
-      }
    }
 
-   private void drawBossBar(GuiGraphics context, int x, int y, float occupancy) {
+   private void drawSmoothBar(GuiGraphics context, int x, int y, int width, float occupancy) {
       float clamped = Mth.clamp(occupancy, 0.0F, 1.0F);
-      int width = 55;
       int progress = Mth.ceil(clamped * width);
-      String color = clamped > 0.9F ? "red" : (clamped > 0.7F ? "yellow" : "blue");
-      ResourceLocation background = ResourceLocation.withDefaultNamespace("boss_bar/" + color + "_background");
-      ResourceLocation fill = ResourceLocation.withDefaultNamespace("boss_bar/" + color + "_progress");
-      ResourceLocation notchedBackground = ResourceLocation.withDefaultNamespace("boss_bar/notched_10_background");
-      ResourceLocation notchedFill = ResourceLocation.withDefaultNamespace("boss_bar/notched_10_progress");
-      this.blitBossSprite(context, background, x, y, width, width);
-      this.blitBossSprite(context, fill, x, y, width, progress);
-      this.blitBossSprite(context, notchedBackground, x, y, width, width);
-      this.blitBossSprite(context, notchedFill, x, y, width, progress);
-   }
-
-   private void blitBossSprite(GuiGraphics context, ResourceLocation sprite, int x, int y, int width, int progress) {
-      int first = Math.min(width - 5, progress);
-      if (first > 0) {
-         context.blitSprite(RenderType::guiTextured, sprite, 182, 5, 0, 0, x, y, first, 5);
-      }
-
-      int second = progress - (width - 5);
-      if (second > 0) {
-         context.blitSprite(RenderType::guiTextured, sprite, 182, 5, 177, 0, x + first, y, second, 5);
-      }
+      int color = clamped > 0.9F ? 0xFFFF5555 : (clamped > 0.7F ? 0xFFFFFF55 : 0xFF55FF55);
+      context.fill(x - 1, y - 1, x + width + 1, y + 6, 0xFF000000);
+      context.fill(x, y, x + width, y + 5, 0xFF3A3A3A);
+      context.fill(x, y, x + progress, y + 5, color);
    }
 
    protected void renderLabels(GuiGraphics context, int mouseX, int mouseY) {
@@ -218,7 +209,6 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
          this.prevBarOccupancy = this.currentBarOccupancy;
          BundleContents content = ((BundleInventoryHandler)this.menu).getBundleInventory().getBundleContent();
          if (content != null) {
-            this.barColor.update(content.weight().floatValue());
             float targetBarValue = content.weight().floatValue();
             this.currentBarOccupancy = Mth.lerp(0.5F, this.currentBarOccupancy, targetBarValue);
             if (targetBarValue <= 0.0F && this.currentBarOccupancy <= 0.01F) {
