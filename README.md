@@ -39,15 +39,19 @@ the Fabric jars natively (the mod uses no Fabric API, and its
 separate Quilt build exists — verify with one playtest on Quilt. No other
 loader has builds for any Minecraft version that has the bundle item.
 
-**NilLoader (3 jars, 26.x only)** — the loader-less build: a Java agent that
-runs the mod on stock Minecraft. Only 26.x is viable because the game is
-unobfuscated there (no mapping layer — and nilgradle's shaded ASM cannot read
-the 26.x class format anyway) and the 26.x-era code draws vanilla sprites only
-(a nilmod cannot mount a resource pack; the 1.21.2–1.21.4 eras draw a
-mod-provided texture, so they are not portable). The three mixins are
-rewritten as Mini transformers that delegate into the same unchanged `Hooks`
-class, and the access widener is replaced by a runtime transformer plus a
-build-time widened compile jar.
+**NilLoader (3 jars, 26.x only)** — the loader-less build: a standalone Java
+agent that runs the mod on stock Minecraft. Only 26.x is viable because the
+game is unobfuscated there (no mapping layer — and NilGradle's shaded ASM
+cannot read the 26.x class format anyway) and the 26.x-era code draws vanilla
+sprites only (a nilmod cannot mount a resource pack; the 1.21.2–1.21.4 eras
+draw a mod-provided texture, so they are not portable). NilGradle itself
+cannot run on Gradle 9 (`ConfigurationContainer.add` was removed), so the nil
+build is self-managed: it resolves the Mojang client jar + library artifacts
+from piston-meta, widens a copy of the client jar for javac, and packages
+NilLoader embedded (`Premain-Class`/`Agent-Class` + `nilmod.css`). The three
+mixins are rewritten as Mini transformers that delegate into the same
+unchanged `Hooks` class, and the access widener is replaced by a runtime
+access-flag transformer plus the build-time widened compile jar.
 
 Each jar reports honest provenance, e.g. `BundleInventory-Fabric-1.7.2+mc1.21.6-1.21.8.jar`
 is a recompile of official build **1.7.2** for **Minecraft 1.21.6–1.21.8**,
@@ -103,8 +107,8 @@ src/versions/<era>/
 The build is driven by [Stonecutter](https://stonecutter.kikugie.dev/) with
 [loom-back-compat](https://codeberg.org/KikuGie/loom-back-compat) (Fabric),
 [ModDevGradle](https://github.com/neoforged/ModDevGradle) (NeoForge),
-ForgeGradle 7 (Forge) and [NilGradle](https://git.sleeping.town/Nil/NilGradle)
-(NilLoader); per-node coordinates live in `stonecutter.properties.toml`.
+ForgeGradle 7 (Forge) and a self-managed agent build for NilLoader; per-node
+coordinates live in `stonecutter.properties.toml`.
 
 ## Building
 
@@ -114,10 +118,13 @@ with a Java 21 toolchain that Gradle auto-provisions.
 ```bash
 # Everything (30 release groups: 9 Fabric + 9 NeoForge + 9 Forge + 3 NilLoader).
 #
-# The FIRST build of a NeoForge group runs its NeoForm pipeline and the FIRST
+# One node at a time is the safe profile: ForgeGradle performs its Minecraft
+# setup at CONFIGURATION time, so configure-on-demand is enabled in
+# gradle.properties and org.gradle.workers.max=1 keeps memory flat.
+# The FIRST build of a NeoForge group runs its NeoForm pipeline and the first
 # build of a Forge group its ForgeGradle setup (Minecraft is decompiled for
-# that version), which is heavy. Build sequentially to keep memory bounded;
-# everything is cached from the second run on.
+# that version): ~2-3 minutes each. Everything is cached afterwards, and a
+# single node then builds in 3-20 seconds.
 ./gradlew build --no-parallel
 
 # One group:
