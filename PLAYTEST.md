@@ -21,14 +21,12 @@ Everything here is prepared by `tools/make-playtest-worlds.ps1` and
 
 ## Launching
 
-Prism is configured with `JoinWorldOnLaunch=BundlePlaytest`, which should skip
-the main menu. If a launch lands on the title screen anyway, use one of:
-
-1. Prism's **Play button dropdown → world `BundlePlaytest`** (quick play), or
-2. **Singleplayer → BundlePlaytest**.
-
-A known Prism 11.1.1 quirk is that the per-instance quick-play setting is not
-always forwarded to the game; the world is unaffected.
+Prism is configured with `JoinServerOnLaunch=true` and
+`JoinWorldOnLaunch=BundlePlaytest`, so pressing Play goes straight into the
+world and skips the main menu (verified on 1.21.4). If an instance ever lands
+on the title screen, its config lost those keys (Prism rewrites
+`instance.cfg` from memory); close Prism and rerun
+`tools/make-playtest-worlds.ps1 -Only '<instance name>'`.
 
 ## Kit map
 
