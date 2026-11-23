@@ -59,6 +59,9 @@ java {
     targetCompatibility = JavaVersion.toVersion(javaRelease)
 
     toolchain {
+        // Temurin (Eclipse Adoptium): the vendor the Fabric templates and CI
+        // use. Gradle auto-provisions it via foojay if it is missing.
+        vendor = JvmVendorSpec.ADOPTIUM
         languageVersion = JavaLanguageVersion.of(javaRelease)
     }
 }
