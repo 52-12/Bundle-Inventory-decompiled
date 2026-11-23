@@ -1,20 +1,26 @@
 package io.socol.bundleinventory.inventory;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.socol.bundleinventory.BundleInventoryMod;
+import io.socol.bundleinventory.mixin.client.AbstractContainerScreenAccessor;
 import io.socol.bundleinventory.util.UIDrawer;
+import java.util.List;
+import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
@@ -27,13 +33,17 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
+import net.minecraft.world.item.component.BundleContents.Mutable;
 import org.jetbrains.annotations.Nullable;
 
 public class BundleInventoryScreen extends AbstractContainerScreen<BundleInventoryHandler> {
+   private static final ResourceLocation SLOT_HIGHLIGHT_BACK_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_back");
+   private static final ResourceLocation SLOT_HIGHLIGHT_FRONT_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_front");
    private static final int MAX_TITLE_WIDTH = 120;
    private final FormattedCharSequence trimmedTitle = trimTitleToWidth(this.getTitle(), 120);
    private final boolean openInventoryOnClose;
@@ -41,6 +51,7 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
    private float prevBarOccupancy;
    private int scrollBarSelectedRow;
    private int scrollBarRowsCount;
+   private Slot focusedBundleSlot = null;
 
    public BundleInventoryScreen(BundleInventoryHandler handler, Inventory inventory, boolean openInventoryOnClose) {
       super(handler, inventory, handler.getBundleTitle());
@@ -50,6 +61,17 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       this.inventoryLabelY = this.imageHeight - 94;
       this.currentBarOccupancy = handler.getBundleInventory().getBundleContent().weight().floatValue();
       this.prevBarOccupancy = this.currentBarOccupancy;
+   }
+
+   @Nullable
+   private Slot getBundleSlotAt(double mouseX, double mouseY) {
+      for (Slot slot : ((BundleInventoryHandler)this.menu).getBundleSlots()) {
+         if (slot.isActive() && this.isHovering(slot.x, slot.y, 16, 16, mouseX, mouseY)) {
+            return slot;
+         }
+      }
+
+      return null;
    }
 
    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
@@ -70,8 +92,23 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
          }
       }
 
+      this.focusedBundleSlot = this.getBundleSlotAt(mouseX, mouseY);
       super.render(context, mouseX, mouseY, delta);
       this.renderTooltip(context, mouseX, mouseY);
+      this.drawMouseoverBundleTooltip(context, mouseX, mouseY);
+   }
+
+   private void drawMouseoverBundleTooltip(GuiGraphics context, int x, int y) {
+      if (this.focusedBundleSlot != null && this.focusedBundleSlot.hasItem()) {
+         ItemStack focusedStack = this.focusedBundleSlot.getItem();
+         Optional<TooltipComponent> tooltipData = focusedStack.getTooltipImage();
+         Boolean stickyTooltip = tooltipData.map(ClientTooltipComponent::create).<Boolean>map(ClientTooltipComponent::showTooltipWithItemInHand).orElse(false);
+         if (((BundleInventoryHandler)this.menu).getCarried().isEmpty() || stickyTooltip) {
+            context.renderTooltip(
+               this.font, this.getTooltipFromContainerItem(focusedStack), tooltipData, x, y, (ResourceLocation)focusedStack.get(DataComponents.TOOLTIP_STYLE)
+            );
+         }
+      }
    }
 
    protected void renderBg(GuiGraphics context, float delta, int mouseX, int mouseY) {
@@ -125,6 +162,31 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       context.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 4210752, false);
    }
 
+   protected void renderSlots(GuiGraphics context) {
+      super.renderSlots(context);
+      this.drawBundleSlotHighlightBack(context);
+
+      for (Slot slot : ((BundleInventoryHandler)this.menu).getBundleSlots()) {
+         if (slot.isActive()) {
+            this.renderSlot(context, slot);
+         }
+      }
+
+      this.drawBundleSlotHighlightFront(context);
+   }
+
+   private void drawBundleSlotHighlightBack(GuiGraphics context) {
+      if (this.focusedBundleSlot != null && this.focusedBundleSlot.isHighlightable()) {
+         context.blitSprite(RenderType::guiTextured, SLOT_HIGHLIGHT_BACK_TEXTURE, this.focusedBundleSlot.x - 4, this.focusedBundleSlot.y - 4, 24, 24);
+      }
+   }
+
+   private void drawBundleSlotHighlightFront(GuiGraphics context) {
+      if (this.focusedBundleSlot != null && this.focusedBundleSlot.isHighlightable()) {
+         context.blitSprite(RenderType::guiTexturedOverlay, SLOT_HIGHLIGHT_FRONT_TEXTURE, this.focusedBundleSlot.x - 4, this.focusedBundleSlot.y - 4, 24, 24);
+      }
+   }
+
    protected void renderSlot(GuiGraphics context, Slot slot) {
       if (!BundleInventoryMod.config().indicateOpenBundle()) {
          super.renderSlot(context, slot);
@@ -159,30 +221,6 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
    private BakedModel getModelOrOverride(BakedModel model, ItemStack stack, @Nullable ClientLevel world, @Nullable LivingEntity entity) {
       BakedModel override = model.overrides().findOverride(stack, world, entity, 0);
       return override == null ? model : override;
-   }
-
-   protected void slotClicked(Slot slot, int slotId, int button, ClickType actionType) {
-      if (!(slot instanceof BundleInventoryHandler.BundleItemSlot)) {
-         if (actionType != ClickType.SWAP || ((BundleInventoryHandler)this.menu).getPlayerInventoryBundleSlot() != button) {
-            LocalPlayer player = Minecraft.getInstance().player;
-            if (player != null) {
-               if (slotId >= 46) {
-                  int slotIndex = slotId - 46;
-                  ((BundleInventoryHandler)this.menu).handleBundleSlotAction(slotIndex, button, actionType);
-                  return;
-               }
-
-               if (slotId >= 9
-                  && actionType == ClickType.QUICK_MOVE
-                  && slot.hasItem()
-                  && ((BundleInventoryHandler)this.menu).quickMoveIntoBundle(player, slotId)) {
-                  return;
-               }
-            }
-
-            super.slotClicked(slot, slotId, button, actionType);
-         }
-      }
    }
 
    protected void containerTick() {
@@ -230,6 +268,21 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       }
    }
 
+   public boolean mouseClicked(double mouseX, double mouseY, int button) {
+      Slot bundleSlot = this.getBundleSlotAt(mouseX, mouseY);
+      if (bundleSlot == null) {
+         return super.mouseClicked(mouseX, mouseY, button);
+      }
+
+      boolean shiftClick = InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 340)
+         || InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), 344);
+      ClickType actionType = shiftClick ? ClickType.QUICK_MOVE : ClickType.PICKUP;
+      int slotIndex = bundleSlot.getContainerSlot();
+      ((BundleInventoryHandler)this.menu).handleBundleSlotAction(slotIndex, button, actionType);
+      ((AbstractContainerScreenAccessor)this).setSkipNextRelease(true);
+      return true;
+   }
+
    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
       return this.getFocused() != null && this.isDragging() && button == 0
          ? this.getFocused().mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
@@ -258,6 +311,19 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
          return true;
       } else {
          return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+      }
+   }
+
+   public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+      if (this.focusedBundleSlot != null
+         && this.focusedBundleSlot.hasItem()
+         && this.minecraft != null
+         && this.minecraft.options.keyDrop.matches(keyCode, scanCode)) {
+         int slotIndex = this.focusedBundleSlot.getContainerSlot();
+         ((BundleInventoryHandler)this.menu).handleBundleSlotAction(slotIndex, hasControlDown() ? 1 : 0, ClickType.THROW);
+         return true;
+      } else {
+         return super.keyPressed(keyCode, scanCode, modifiers);
       }
    }
 

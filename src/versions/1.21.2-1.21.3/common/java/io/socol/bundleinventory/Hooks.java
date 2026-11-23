@@ -1,5 +1,7 @@
 package io.socol.bundleinventory;
 
+import io.socol.bundleinventory.inventory.BundleInventoryHandler;
+import io.socol.bundleinventory.inventory.BundleInventoryScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.ItemPickerMenu;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.SlotWrapper;
@@ -32,6 +34,24 @@ public class Hooks {
 
       int bundleSlot = hand == InteractionHand.MAIN_HAND ? player.getInventory().selected : 40;
       return BundleInventoryMod.openBundleInventory(bundleSlot, false) ? InteractionResult.SUCCESS : null;
+   }
+
+   public static boolean onClickSlot(int syncId, int slotId, int button, ClickType actionType, Player player) {
+      if (!(player instanceof LocalPlayer)) {
+         return false;
+      }
+
+      Minecraft mc = Minecraft.getInstance();
+      if (!(mc.screen instanceof BundleInventoryScreen)) {
+         return false;
+      }
+
+      if (player.containerMenu.containerId != syncId) {
+         return false;
+      }
+
+      BundleInventoryHandler handler = (BundleInventoryHandler)((BundleInventoryScreen)mc.screen).getMenu();
+      return handler.handlePlayerSlotClick(slotId, button, actionType);
    }
 
    public static boolean onScreenSlotClick(AbstractContainerMenu handler, Slot slot, int slotId, int button, ClickType actionType) {

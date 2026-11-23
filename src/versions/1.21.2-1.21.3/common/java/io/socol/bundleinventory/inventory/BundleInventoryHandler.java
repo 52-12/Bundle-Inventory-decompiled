@@ -7,6 +7,7 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import net.minecraft.network.protocol.game.ServerboundSelectBundleItemPacket;
@@ -57,6 +58,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
    private final boolean openInventoryOnClose;
    private int selectedRow;
    private int rowsCount;
+   private final NonNullList<Slot> bundleSlots = NonNullList.create();
 
    public BundleInventoryHandler(Inventory playerInventory, BundleInventory bundleInventory, int syncId, int rowsVisible, boolean openInventoryOnClose) {
       super(MenuType.GENERIC_9x3, syncId);
@@ -124,12 +126,17 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
 
       for (int i = 0; i < rowsVisible; i++) {
          for (int j = 0; j < 8; j++) {
-            this.addSlot(new BundleInventoryHandler.BundleContentSlot(bundleInventory, j + i * 8, left + j * 18, 18 + i * 18));
+            BundleInventoryHandler.BundleContentSlot slot = new BundleInventoryHandler.BundleContentSlot(bundleInventory, j + i * 8, left + j * 18, 18 + i * 18);
+            this.bundleSlots.add(slot);
          }
       }
 
       playerOpenSound(playerInventory.player);
       this.updateRowsCount();
+   }
+
+   public NonNullList<Slot> getBundleSlots() {
+      return this.bundleSlots;
    }
 
    private void updateRowsCount() {
@@ -201,6 +208,27 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
       }
    }
 
+   public boolean handlePlayerSlotClick(int slotId, int button, ClickType actionType) {
+      if (slotId >= 0 && slotId < this.slots.size()) {
+         Slot slot = this.getSlot(slotId);
+         if (slot instanceof BundleInventoryHandler.BundleItemSlot) {
+            return true;
+         } else if (actionType == ClickType.SWAP && this.getPlayerInventoryBundleSlot() == button) {
+            return true;
+         } else {
+            LocalPlayer player = Minecraft.getInstance().player;
+            if (player != null && slotId >= 9 && actionType == ClickType.QUICK_MOVE) {
+               ClickAction clickType = button == 0 ? ClickAction.PRIMARY : ClickAction.SECONDARY;
+               return slot.hasItem() && this.quickMoveIntoBundle(player, slotId, clickType);
+            } else {
+               return false;
+            }
+         }
+      } else {
+         return false;
+      }
+   }
+
    public void handleBundleSlotAction(int bundleInnerSlot, int button, ClickType actionType) {
       LocalPlayer player = Minecraft.getInstance().player;
       if (player != null) {
@@ -231,31 +259,35 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
             robot.clickBundle(ClickAction.SECONDARY);
             playRemoveOneSound(player);
          } else {
-            if (cursorStack.getItem() instanceof BundleItem) {
-               return;
-            }
-
             if (BundleInventoryMod.config().clientSideItemInsertionChecks()) {
-               int canAddCount = this.checkItemCanBeAddedToBundle(cursorStack);
+               int canAddCount = this.checkStackCanBeAddedToBundle(cursorStack);
                if (canAddCount <= 0) {
                   playInsertFailSound(player);
                   return;
                }
             }
 
-            robot.clickBundle(ClickAction.PRIMARY);
+            boolean insertingBundle = cursorStack.getItem() instanceof BundleItem;
+            if (insertingBundle) {
+               robot.clickBundle(ClickAction.SECONDARY);
+               robot.clickBundle(ClickAction.PRIMARY);
+               robot.clickBundle(ClickAction.PRIMARY);
+            } else {
+               robot.clickBundle(ClickAction.PRIMARY);
+            }
+
             playInsertSound(player);
          }
       }
    }
 
-   public boolean quickMoveIntoBundle(LocalPlayer player, int slotId) {
+   public boolean quickMoveIntoBundle(LocalPlayer player, int slotId, ClickAction clickType) {
       if (!this.getCarried().isEmpty()) {
          return false;
       }
 
       ItemStack stackToMove = this.getSlot(slotId).getItem();
-      if (stackToMove.getItem() instanceof BundleItem) {
+      if (stackToMove.getItem() instanceof BundleItem && clickType == ClickAction.SECONDARY) {
          int playerInvSlot = this.getSlot(slotId).getContainerSlot();
          if (!BundleInventoryMod.openBundleInventory(playerInvSlot, this.openInventoryOnClose)) {
             playInsertFailSound(player);
@@ -263,24 +295,31 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
 
          return true;
       } else {
-         BundleInventoryHandler.Robot robot = this.createRobot(player);
-         if (robot == null) {
-            return false;
-         }
-
+         boolean movingBundle = stackToMove.getItem() instanceof BundleItem;
          int canAddCount = stackToMove.getCount();
          if (BundleInventoryMod.config().clientSideItemInsertionChecks()) {
-            canAddCount = this.checkItemCanBeAddedToBundle(stackToMove);
+            canAddCount = this.checkStackCanBeAddedToBundle(stackToMove);
             if (canAddCount <= 0) {
                playInsertFailSound(player);
                return true;
             }
          }
 
+         BundleInventoryHandler.Robot robot = this.createRobot(player);
+         if (robot == null) {
+            return false;
+         }
+
          robot.clickSlot(ClickAction.PRIMARY, slotId);
-         robot.clickBundle(ClickAction.PRIMARY);
-         if (canAddCount < stackToMove.getCount()) {
-            robot.clickSlot(ClickAction.PRIMARY, slotId);
+         if (movingBundle) {
+            robot.clickBundle(ClickAction.SECONDARY);
+            robot.clickBundle(ClickAction.PRIMARY);
+            robot.clickBundle(ClickAction.PRIMARY);
+         } else {
+            robot.clickBundle(ClickAction.PRIMARY);
+            if (canAddCount < stackToMove.getCount()) {
+               robot.clickSlot(ClickAction.PRIMARY, slotId);
+            }
          }
 
          playInsertSound(player);
@@ -325,14 +364,14 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
       return content == null || content.weight().compareTo(Fraction.ONE) >= 0;
    }
 
-   private int checkItemCanBeAddedToBundle(ItemStack stackToAdd) {
+   private int checkStackCanBeAddedToBundle(ItemStack stackToAdd) {
       BundleContents content = this.bundleInventory.getBundleContent();
       if (content == null) {
          return 0;
       }
 
       Mutable builder = new Mutable(content);
-      return builder.tryInsert(stackToAdd);
+      return builder.tryInsert(stackToAdd.copy());
    }
 
    private boolean hasItemInBundleInnerSlot(int bundleInnerSlot) {
