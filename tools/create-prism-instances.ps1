@@ -91,8 +91,11 @@ function New-Instance($name, $group, $mc, $loader, $loaderVersion, $jar, $isNil)
     if ($isNil) {
         # Prism appends -Djava.library.path after instance args, so overriding
         # the JVM args is safe; carry the memory flags explicitly.
+        # Memory flags come from the instance memory boxes (MinMemAlloc/
+        # MaxMemAlloc); putting -Xms/-Xmx here makes Prism warn about manual
+        # memory options. Only the agent belongs in the JVM args.
         $cfg += 'OverrideJavaArgs=true'
-        $cfg += "JvmArgs=-Xms1G -Xmx4G -javaagent:$jar"
+        $cfg += "JvmArgs=-javaagent:$jar"
     }
     Set-Content -Path (Join-Path $dir 'instance.cfg') -Value $cfg
 

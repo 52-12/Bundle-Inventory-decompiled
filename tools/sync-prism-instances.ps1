@@ -7,7 +7,10 @@
 #   powershell -File ..\tools\sync-prism-instances.ps1      (from the repo root)
 param(
     [string]$Repo = '',
-    [string]$PrismData = "$env:APPDATA\PrismLauncher"
+    [string]$PrismData = "$env:APPDATA\PrismLauncher",
+    # Instance names to leave alone (e.g. one that is currently running and
+    # holds its mod jar open).
+    [string[]]$Skip = @()
 )
 $ErrorActionPreference = 'Stop'
 if (-not $Repo) {
@@ -35,6 +38,7 @@ foreach ($nodeDir in Get-ChildItem (Join-Path $Repo 'versions') -Directory) {
         # Nilmods have no loader component, so their instances are named
         # "BI NilLoader <mc>".
         $instanceName = if ($loader -eq 'Nil') { "BI NilLoader $mc" } else { "BI $loader $mc" }
+        if ($Skip -contains $instanceName) { Write-Output ("skipping $instanceName (in use)"); continue }
         $instance = Join-Path $instancesDir $instanceName
         if (-not (Test-Path $instance)) {
             Write-Warning ("no instance for {0} ({1})" -f $jar.Name, $instanceName)
