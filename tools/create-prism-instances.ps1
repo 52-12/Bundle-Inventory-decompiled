@@ -13,7 +13,14 @@ if (-not $Repo) {
     if (Test-Path (Join-Path (Get-Location) 'gradlew.bat')) { $Repo = (Get-Location).Path }
     else { $Repo = Split-Path -Parent $PSScriptRoot }
 }
-$instancesDir = Join-Path $PrismData 'instances'
+# Prism may use a custom instance directory; prismlauncher.cfg is authoritative.
+$instanceRoot = Join-Path $PrismData 'instances'
+$cfgPath = Join-Path $PrismData 'prismlauncher.cfg'
+if (Test-Path $cfgPath) {
+    $line = Get-Content $cfgPath | Where-Object { $_ -match '^InstanceDir=' } | Select-Object -First 1
+    if ($line) { $instanceRoot = ($line -replace '^InstanceDir=', '') }
+}
+$instancesDir = $instanceRoot
 if (-not (Test-Path $instancesDir)) { New-Item -ItemType Directory -Force -Path $instancesDir | Out-Null }
 
 # group => minecraft version, loader uid+version (or $null for nilmods)
