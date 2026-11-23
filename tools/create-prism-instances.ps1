@@ -127,3 +127,19 @@ foreach ($g in $groups) {
 }
 
 Write-Output ("total instances: " + (Get-ChildItem $instancesDir -Directory | Measure-Object).Count)
+
+# Prism's group assignments are authoritative in instgroups.json (the
+# `group=` key in instance.cfg alone does not populate the Groups view), so
+# merge the created instances into the "Bundle Inventory" group.
+$groupFile = Join-Path $instancesDir 'instgroups.json'
+$groupName = 'Bundle Inventory'
+$created = Get-ChildItem $instancesDir -Directory | Where-Object { $_.Name -like 'BI *' } | Select-Object -ExpandProperty Name | Sort-Object
+$groups = [ordered]@{}
+if (Test-Path $groupFile) {
+    $existing = Get-Content $groupFile -Raw | ConvertFrom-Json
+    foreach ($p in $existing.groups.PSObject.Properties) { $groups[$p.Name] = $p.Value }
+}
+$groups[$groupName] = [pscustomobject]@{ hidden = $false; instances = @($created) }
+[ordered]@{ formatVersion = '1'; groups = $groups } | ConvertTo-Json -Depth 6 | Set-Content $groupFile
+Write-Output ("grouped $($created.Count) instances under '$groupName' in instgroups.json")
+
