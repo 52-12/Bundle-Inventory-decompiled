@@ -42,7 +42,6 @@ import net.minecraft.world.item.component.BundleContents.Mutable;
 import org.jetbrains.annotations.Nullable;
 
 public class BundleInventoryScreen extends AbstractContainerScreen<BundleInventoryHandler> {
-   private static final ResourceLocation TEXTURE = BundleInventoryMod.id("textures/gui/bundle.png");
    private static final ResourceLocation SLOT_HIGHLIGHT_BACK_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_back");
    private static final ResourceLocation SLOT_HIGHLIGHT_FRONT_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_front");
    private static final int MAX_TITLE_WIDTH = 120;
@@ -158,7 +157,15 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       int top = y0 + 6;
       context.fill(left, top, left + 38, top + 8, 0xFF8B8B8B);
       context.fill(left, top, left + barWidth, top + 8, barColor);
-      context.blit(RenderType::guiTextured, TEXTURE, x0 + this.imageWidth - 47, y0 + 5, 176.0F, 0.0F, 40, 10, 512, 512);
+      // Original sunken frame, drawn instead of the bundle.png sprite so the
+      // jars carry no GUI art and follow resource-pack colours.
+      int fx = x0 + this.imageWidth - 47;
+      int fy = y0 + 5;
+      context.fill(fx, fy, fx + 40, fy + 1, 0xFF373737);
+      context.fill(fx, fy, fx + 1, fy + 10, 0xFF373737);
+      context.fill(fx + 39, fy, fx + 40, fy + 10, 0x30FFFFFF);
+      context.fill(fx, fy + 9, fx + 40, fy + 10, 0x30FFFFFF);
+      context.fill(fx + 1, fy + 1, fx + 39, fy + 2, 0x30FFFFFF);
    }
 
    protected void renderLabels(GuiGraphics context, int mouseX, int mouseY) {
