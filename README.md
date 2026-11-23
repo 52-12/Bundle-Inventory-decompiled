@@ -182,6 +182,17 @@ Kept deliberately minimal, and all mechanical:
   level, so those jars package the mixin config as `JAVA_21` while the code
   still targets Java 25 (ForgeGradle declares the artifacts JVM-25-only and
   refuses a 21 target). Verified joining on 26.1.2/64.1.5, 26.2 and 26.3.
+  Both lines also ship a buggy `BundleItem` patch: `overrideOtherStackedOnMe`
+  starts with `if (other.getCount() != 1) return false` where 26.3 checks
+  `self.getCount()`. Because the cursor is empty (or holds a whole stack) in
+  normal bundle clicks, right-clicking a bundle to take an item out picked the
+  bundle itself up instead, and stack insertion silently failed - in vanilla
+  screens too. `BundleItemClickFixMixin` redirects just that first
+  `getCount()` call for the 26.1-26.1.2 and 26.2 jars (a no-op where the
+  instruction is absent, such as Fabric/NeoForge/26.3) and returns the bundle
+  count where the receiver really is the bundle. Verified on Forge 26.1.2 and
+  26.2: insert a stack, then take it back out. On a remote Forge 26.1/26.2
+  server without this mod the upstream bug still applies.
 - **NilLoader build.** The three SpongePowered mixins become Mini transformers
   that call the same `Hooks` methods (NilLoader does not support Mixin). Six
   jars cover 1.21.2-1.21.11 and three cover 26.x; the jar embeds NilLoader so
