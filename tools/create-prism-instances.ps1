@@ -38,7 +38,7 @@ $groups = @(
     @{ node = '1.21.4-neoforge';        mc = '1.21.4'; loader = 'net.neoforged'; lv = '21.4.161' },
     @{ node = '1.21.5-neoforge';        mc = '1.21.5'; loader = 'net.neoforged'; lv = '21.5.101' },
     @{ node = '1.21.6-1.21.8-neoforge'; mc = '1.21.6'; loader = 'net.neoforged'; lv = '21.6.20-beta' },
-    @{ node = '1.21.9-1.21.10-neoforge';mc = '1.21.9'; loader = 'net.neoforged'; lv = '21.9.16-beta' },
+    @{ node = '1.21.9-1.21.10-neoforge';mc = '1.21.10'; loader = 'net.neoforged'; lv = '21.10.64' },   # 21.9.16-beta crashes its own Mods screen
     @{ node = '1.21.11-neoforge';       mc = '1.21.11'; loader = 'net.neoforged'; lv = '21.11.48' },
     @{ node = '26.1-26.1.2-neoforge';   mc = '26.1'; loader = 'net.neoforged'; lv = '26.1.0.19-beta' },
     @{ node = '26.2-neoforge';          mc = '26.2'; loader = 'net.neoforged'; lv = '26.2.0.95' },
