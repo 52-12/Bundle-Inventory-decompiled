@@ -6,13 +6,16 @@ const [packetFile, cpuFile] = process.argv.slice(2);
 
 function load(file) {
   if (!file || !fs.existsSync(file)) return null;
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+  let text = fs.readFileSync(file, 'utf8');
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+  if (!text.trim()) return null;
+  return JSON.parse(text);
 }
 
 const packets = load(packetFile);
 if (packets) {
   const byId = new Map();
-  for (const event of packets.events ?? []) {
+  for (const event of (packets.recording?.events ?? packets.events ?? [])) {
     const v = event.values ?? {};
     const id = v.packetId ?? v.packetID ?? '?';
     const key = `${event.type} id=${id}`;
@@ -32,7 +35,7 @@ const cpu = load(cpuFile);
 if (cpu) {
   const byMethod = new Map();
   let total = 0;
-  for (const event of cpu.events ?? []) {
+  for (const event of (cpu.recording?.events ?? cpu.events ?? [])) {
     const frames = event.values?.stackTrace?.frames ?? [];
     total++;
     const top = frames[0];
