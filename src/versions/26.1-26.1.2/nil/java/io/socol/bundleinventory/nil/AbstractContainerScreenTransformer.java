@@ -41,7 +41,7 @@ public class AbstractContainerScreenTransformer extends MiniTransformer implemen
    public static class Hooks {
       public static boolean onSlotClicked(
             AbstractContainerScreen self, Slot slot, int slotId, int button, ContainerInput actionType) {
-         return Hooks.onScreenSlotClick(self.getMenu(), slot, slotId, button, actionType);
+         return io.socol.bundleinventory.Hooks.onScreenSlotClick(self.getMenu(), slot, slotId, button, actionType);
       }
    }
 }

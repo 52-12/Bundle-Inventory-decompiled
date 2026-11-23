@@ -4,11 +4,6 @@ pluginManagement {
         maven { url = 'https://maven.kikugie.dev/releases'; name = 'KikuGie Releases' }
         maven { url = 'https://maven.kikugie.dev/snapshots'; name = 'KikuGie Snapshots' }
         maven { url = 'https://maven.neoforged.net/releases' }
-        // NilGradle's plugin marker.
-        maven {
-            url = 'https://repo.sleeping.town'
-            content { includeGroup 'com.unascribed.nilgradle' }
-        }
         mavenCentral()
         gradlePluginPortal()
     }

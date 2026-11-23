@@ -63,12 +63,12 @@ public class MultiPlayerGameModeTransformer extends MiniTransformer implements C
 
    public static class Hooks {
       public static InteractionResult onUseItem(Player player, InteractionHand hand) {
-         return Hooks.onItemInteract(player, hand);
+         return io.socol.bundleinventory.Hooks.onItemInteract(player, hand);
       }
 
       public static boolean onClickSlot(
             int syncId, int slotId, int button, ContainerInput actionType, Player player) {
-         return Hooks.onClickSlot(syncId, slotId, button, actionType, player);
+         return io.socol.bundleinventory.Hooks.onClickSlot(syncId, slotId, button, actionType, player);
       }
    }
 }

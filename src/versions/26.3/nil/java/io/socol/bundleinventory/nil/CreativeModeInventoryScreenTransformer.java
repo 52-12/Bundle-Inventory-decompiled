@@ -40,7 +40,7 @@ public class CreativeModeInventoryScreenTransformer extends MiniTransformer impl
       public static boolean onSlotClicked(
             CreativeModeInventoryScreen self, Slot slot, int slotId, int button, ContainerInput actionType) {
          // The common Hooks already copes with a null player.
-         return Hooks.onScreenSlotClick(self.getMenu(), slot, slotId, button, actionType);
+         return io.socol.bundleinventory.Hooks.onScreenSlotClick(self.getMenu(), slot, slotId, button, actionType);
       }
    }
 }

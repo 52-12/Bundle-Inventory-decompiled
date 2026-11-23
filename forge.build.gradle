@@ -1,3 +1,20 @@
+import java.util.zip.ZipFile
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.FieldVisitor
+import org.objectweb.asm.Opcodes
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        // Widens the Forge-prepared dev game jar for javac (see widenForgeGameJars).
+        classpath 'org.ow2.asm:asm:9.10.1'
+    }
+}
+
 plugins {
     // ForgeGradle 7 for every Forge group.
     //
@@ -7,6 +24,8 @@ plugins {
     // neighbours (verified against the -userdev.jar configs of every pin,
     // see research/forge-mdk.md), so FG7 7.0.40 drives them all.
     id 'net.minecraftforge.gradle' version '7.0.40'
+    // ForgeGradle 7 does not apply the Java plugin; the MDK declares it too.
+    id 'java'
 }
 
 // Each Forge node compiles the same Mojang-named game code as the Fabric and
@@ -28,6 +47,127 @@ def mcCompat = property('mod.mc_compat') as String
 def forgeVersion = property('deps.forge') as String
 def loaderSpec = property('deps.forge_spec') as String
 def eventbusValidator = property('deps.eventbus_validator')
+// Forge 1.21.x ships ATs in SRG member names for RUNTIME (the jar keeps that
+// file, and Forge applies it at runtime), while the dev classpath ForgeGradle
+// builds is Mojang-named. ForgeGradle's dev-time AT application proved
+// unreliable here, so compile-time access is solved deterministically the same
+// way the NilLoader build does it: widen the prepared dev game jar on javac's
+// classpath only. (26.x uses Mojang names in both places, but widening there
+// is harmless and keeps one code path.)
+def is26x = stonecutter.current.version.startsWith('26.')
+
+// Compile-time widening: rewrite the Forge-prepared dev game jar(s) that
+// javac sees. The shipped jar keeps its SRG/Mojang AT for runtime.
+
+class WidenVisitor extends ClassVisitor {
+    static final Map<String, Set<String>> FIELD_TARGETS = [
+            'net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper':
+                    ['target:Lnet/minecraft/world/inventory/Slot;'] as Set,
+            'net/minecraft/client/gui/screens/inventory/AbstractContainerScreen':
+                    ['skipNextRelease:Z'] as Set,
+            'net/minecraft/client/renderer/entity/ItemRenderer':
+                    ['itemModelShaper:Lnet/minecraft/client/renderer/ItemModelShaper;'] as Set,
+    ] as Map
+    static final Set<String> CLASS_TARGETS = [
+            'net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper',
+            'net/minecraft/client/gui/screens/inventory/AbstractContainerScreen',
+            'net/minecraft/world/inventory/ArmorSlot',
+    ] as Set
+    // javac reads a nested class's access from the OUTER class's InnerClasses
+    // attribute, so the outer class files must be rewritten too. ItemRenderer
+    // is here because the 1.21.2-1.21.3 era reads one of its private fields.
+    static final Set<String> OUTER_CLASSES = [
+            'net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen',
+            'net/minecraft/client/renderer/entity/ItemRenderer',
+    ] as Set
+    static final Set<String> REWRITE = (CLASS_TARGETS + OUTER_CLASSES) as Set
+
+    String current
+
+    WidenVisitor(ClassVisitor next) {
+        super(Opcodes.ASM9, next)
+    }
+
+    static int makePublic(int access) {
+        return (access & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PUBLIC
+    }
+
+    @Override
+    void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        current = name
+        if (CLASS_TARGETS.contains(name)) access = makePublic(access)
+        super.visit(version, access, name, signature, superName, interfaces)
+    }
+
+    @Override
+    void visitInnerClass(String name, String outerName, String innerName, int access) {
+        if (CLASS_TARGETS.contains(name)) access = makePublic(access)
+        super.visitInnerClass(name, outerName, innerName, access)
+    }
+
+    @Override
+    FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+        def fields = FIELD_TARGETS.get(current)
+        if (fields != null && fields.contains(name + ':' + descriptor)) access = makePublic(access)
+        return super.visitField(access, name, descriptor, signature, value)
+    }
+}
+
+def isGameJar = { File f ->
+    if (!f.name.endsWith('.jar')) return false
+    try {
+        ZipFile z = new ZipFile(f)
+        try {
+            return z.getEntry('net/minecraft/client/Minecraft.class') != null
+        } finally {
+            z.close()
+        }
+    } catch (Exception ignored) {
+        return false
+    }
+}
+
+def widenedDir = layout.buildDirectory.dir('widened-game')
+def widenForgeGameJars = tasks.register('widenForgeGameJars') {
+    outputs.dir(widenedDir)
+    doLast {
+        def outDir = widenedDir.get().asFile
+        outDir.mkdirs()
+        def sources = configurations.compileClasspath.files.findAll { isGameJar(it) }
+        if (sources.isEmpty()) {
+            throw new GradleException('widenForgeGameJars: no Minecraft client jar on compileClasspath')
+        }
+        sources.eachWithIndex { File source, int index ->
+            File dest = new File(outDir, "game-${index}-widened.jar")
+            new ZipFile(source).withCloseable { zipIn ->
+                new java.util.zip.ZipOutputStream(new FileOutputStream(dest)).withCloseable { zipOut ->
+                    zipIn.entries().each { entry ->
+                        if (entry.directory) {
+                            zipOut.putNextEntry(new java.util.zip.ZipEntry(entry.name))
+                            zipOut.closeEntry()
+                            return
+                        }
+                        byte[] bytes = zipIn.getInputStream(entry).bytes
+                        if (WidenVisitor.REWRITE.any { entry.name == it + '.class' }) {
+                            def reader = new ClassReader(bytes)
+                            def writer = new ClassWriter(reader, 0)
+                            reader.accept(new WidenVisitor(writer), 0)
+                            bytes = writer.toByteArray()
+                        }
+                        zipOut.putNextEntry(new java.util.zip.ZipEntry(entry.name))
+                        zipOut.write(bytes)
+                        zipOut.closeEntry()
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn widenForgeGameJars
+    classpath = files({ fileTree(widenedDir) { include '*.jar' } }) + configurations.compileClasspath
+}
 
 sourceSets {
     main {
@@ -41,13 +181,13 @@ sourceSets {
 }
 
 minecraft {
-    // Picks up META-INF/accesstransformer.cfg from the source sets and applies
-    // it to the Minecraft dependency (per the official AT example).
-    accessTransformer = true
+    // Dev-time AT application is replaced by the compile-classpath widening
+    // below; the jar still carries META-INF/accesstransformer.cfg for runtime.
+    accessTransformer = false
 
     // 1.21.x is still obfuscated upstream; Forge runs official (Mojang) names
     // at runtime, so no reobfuscation step exists on any of our versions.
-    if (stonecutter.current.version.startsWith('26.') == false) {
+    if (!is26x) {
         mappings channel: 'official', version: stonecutter.current.version
     }
 
@@ -75,8 +215,10 @@ dependencies {
         annotationProcessor "net.minecraftforge:eventbus-validator:${eventbusValidator}"
     }
 
-    // Mixin annotation processing, matching the official mixins example.
-    annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
+    // Deliberately NO Mixin annotation processor: Forge runs official (Mojang)
+    // names at runtime, so the @Inject strings in the decompiled mixins are
+    // already correct and no refmap may be generated. The processor tries to
+    // map those strings and fails ("Unable to locate obfuscation mapping").
 }
 
 java {
@@ -95,6 +237,13 @@ java {
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = 'UTF-8'
     it.options.release = javaRelease
+    // Forge runs official (Mojang) names at runtime, so the @Inject strings in
+    // the decompiled mixins need no refmap. Forge's userdev artifact still puts
+    // the Mixin annotation processor on the classpath, where javac would
+    // auto-discover it and fail with "Unable to locate obfuscation mapping".
+    // Disable annotation processing entirely for these nodes: the only other
+    // processor is the optional EventBus validator, which this mod never needs.
+    it.options.compilerArgs += ['-proc:none']
 }
 
 // Expand the mods.toml template the way the NeoForge build does, so no
