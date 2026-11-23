@@ -1,0 +1,251 @@
+# Centralized mod + per-node properties.
+# See https://stonecutter.kikugie.dev/wiki/v2/reference/gradle-api/structured-properties
+#
+# Node naming: <minecraft>-<loader>. Each node points at the decompiled
+# sources of the official Bundle Inventory build for its version line
+# (src/versions/<era>). "mod.version" is the original mod version of that
+# official build, so the jar we produce reports honest provenance.
+
+mod.id = "bundleinventory"
+mod.name = "Bundle Inventory"
+
+# Fabric Loader is version-agnostic; one version for every Fabric node.
+deps.fabric_loader = "0.20.1"
+
+# Loom plugin version shared by both loom variants.
+loomx.loom_version = "1.19.4"
+
+# ---------------------------------------------------------------- fabric ----
+
+["1.21.2-fabric"]
+# Official build: Bundle Inventory 1.6.0 (mc 1.21.2-1.21.3).
+sources.dir = "1.21.2-1.21.3"
+mod.version = "1.6.0"
+mod.mc_compat = "1.21.2"
+java.release = "21"
+deps.cloth_config = "16.0.143"
+deps.modmenu = "12.0.1"
+
+["1.21.3-fabric"]
+sources.dir = "1.21.2-1.21.3"
+mod.version = "1.6.0"
+mod.mc_compat = "1.21.3"
+java.release = "21"
+deps.cloth_config = "16.0.143"
+deps.modmenu = "12.0.1"
+
+["1.21.4-fabric"]
+# Official build: Bundle Inventory 1.6.1 (mc 1.21.4).
+sources.dir = "1.21.4"
+mod.version = "1.6.1"
+mod.mc_compat = "1.21.4"
+java.release = "21"
+deps.cloth_config = "17.0.144"
+deps.modmenu = "13.0.4"
+
+["1.21.5-fabric"]
+# Official build: Bundle Inventory 1.7.1 (mc 1.21.5).
+sources.dir = "1.21.5"
+mod.version = "1.7.1"
+mod.mc_compat = "1.21.5"
+java.release = "21"
+deps.cloth_config = "18.0.145"
+deps.modmenu = "14.0.2"
+
+["1.21.6-fabric"]
+# Official build: Bundle Inventory 1.7.2 (mc 1.21.6-1.21.8).
+sources.dir = "1.21.6-1.21.8"
+mod.version = "1.7.2"
+mod.mc_compat = "1.21.6"
+java.release = "21"
+deps.cloth_config = "19.0.147"
+deps.modmenu = "15.0.2"
+
+["1.21.7-fabric"]
+sources.dir = "1.21.6-1.21.8"
+mod.version = "1.7.2"
+mod.mc_compat = "1.21.7"
+java.release = "21"
+deps.cloth_config = "19.0.147"
+deps.modmenu = "15.0.2"
+
+["1.21.8-fabric"]
+sources.dir = "1.21.6-1.21.8"
+mod.version = "1.7.2"
+mod.mc_compat = "1.21.8"
+java.release = "21"
+deps.cloth_config = "19.0.147"
+deps.modmenu = "15.0.2"
+
+["1.21.9-fabric"]
+# Official build: Bundle Inventory 1.7.3 (mc 1.21.9-1.21.10).
+sources.dir = "1.21.9-1.21.10"
+mod.version = "1.7.3"
+mod.mc_compat = "1.21.9"
+java.release = "21"
+deps.cloth_config = "20.0.149"
+deps.modmenu = "16.0.1"
+
+["1.21.10-fabric"]
+sources.dir = "1.21.9-1.21.10"
+mod.version = "1.7.3"
+mod.mc_compat = "1.21.10"
+java.release = "21"
+deps.cloth_config = "20.0.149"
+deps.modmenu = "16.0.1"
+
+["1.21.11-fabric"]
+# Official build: Bundle Inventory 1.7.3 (mc 1.21.11).
+sources.dir = "1.21.11"
+mod.version = "1.7.3"
+mod.mc_compat = "1.21.11"
+java.release = "21"
+deps.cloth_config = "21.11.153"
+deps.modmenu = "17.0.1"
+
+["26.1-fabric"]
+# No official 26.1 build exists; this is the official 26.2 source adapted to
+# 26.1's pre-Gui screen access (Minecraft.screen instead of Minecraft.gui.screen()).
+sources.dir = "26.1-26.1.2"
+mod.version = "1.7.3"
+mod.mc_compat = "26.1"
+java.release = "25"
+deps.cloth_config = "26.1.154"
+deps.modmenu = "18.0.2"
+
+["26.1.1-fabric"]
+sources.dir = "26.1-26.1.2"
+mod.version = "1.7.3"
+mod.mc_compat = "26.1.1"
+java.release = "25"
+deps.cloth_config = "26.1.154"
+deps.modmenu = "18.0.2"
+
+["26.1.2-fabric"]
+sources.dir = "26.1-26.1.2"
+mod.version = "1.7.3"
+mod.mc_compat = "26.1.2"
+java.release = "25"
+deps.cloth_config = "26.1.154"
+deps.modmenu = "18.0.2"
+
+["26.2-fabric"]
+# Official build: Bundle Inventory 1.7.3 (mc 26.2).
+sources.dir = "26.2"
+mod.version = "1.7.3"
+mod.mc_compat = "26.2"
+java.release = "25"
+deps.cloth_config = "26.2.155"
+deps.modmenu = "20.0.3"
+
+["26.3-fabric"]
+# Official build: Bundle Inventory 1.7.3 (mc 26.3).
+sources.dir = "26.3"
+mod.version = "1.7.3"
+mod.mc_compat = "26.3"
+java.release = "25"
+deps.cloth_config = "26.3.159"
+deps.modmenu = "21.0.1"
+
+# -------------------------------------------------------------- neoforge ----
+# Pins from https://maven.neoforged.net/releases/net/neoforged/neoforge
+# (latest per line, checked 2026-11-22). There is no 1.21.2 node: NeoForge
+# only ever shipped two abandoned betas for that line.
+
+["1.21.3-neoforge"]
+sources.dir = "1.21.2-1.21.3"
+mod.version = "1.6.0"
+mod.mc_compat = "1.21.3"
+java.release = "21"
+deps.neoforge = "21.3.100"
+
+["1.21.4-neoforge"]
+sources.dir = "1.21.4"
+mod.version = "1.6.1"
+mod.mc_compat = "1.21.4"
+java.release = "21"
+deps.neoforge = "21.4.161"
+
+["1.21.5-neoforge"]
+sources.dir = "1.21.5"
+mod.version = "1.7.1"
+mod.mc_compat = "1.21.5"
+java.release = "21"
+deps.neoforge = "21.5.101"
+
+["1.21.6-neoforge"]
+sources.dir = "1.21.6-1.21.8"
+mod.version = "1.7.2"
+mod.mc_compat = "1.21.6"
+java.release = "21"
+deps.neoforge = "21.6.20-beta"
+
+["1.21.7-neoforge"]
+sources.dir = "1.21.6-1.21.8"
+mod.version = "1.7.2"
+mod.mc_compat = "1.21.7"
+java.release = "21"
+deps.neoforge = "21.7.25-beta"
+
+["1.21.8-neoforge"]
+sources.dir = "1.21.6-1.21.8"
+mod.version = "1.7.2"
+mod.mc_compat = "1.21.8"
+java.release = "21"
+deps.neoforge = "21.8.57"
+
+["1.21.9-neoforge"]
+sources.dir = "1.21.9-1.21.10"
+mod.version = "1.7.3"
+mod.mc_compat = "1.21.9"
+java.release = "21"
+deps.neoforge = "21.9.16-beta"
+
+["1.21.10-neoforge"]
+sources.dir = "1.21.9-1.21.10"
+mod.version = "1.7.3"
+mod.mc_compat = "1.21.10"
+java.release = "21"
+deps.neoforge = "21.10.64"
+
+["1.21.11-neoforge"]
+sources.dir = "1.21.11"
+mod.version = "1.7.3"
+mod.mc_compat = "1.21.11"
+java.release = "21"
+deps.neoforge = "21.11.48"
+
+["26.1-neoforge"]
+sources.dir = "26.1-26.1.2"
+mod.version = "1.7.3"
+mod.mc_compat = "26.1"
+java.release = "25"
+deps.neoforge = "26.1.0.19-beta"
+
+["26.1.1-neoforge"]
+sources.dir = "26.1-26.1.2"
+mod.version = "1.7.3"
+mod.mc_compat = "26.1.1"
+java.release = "25"
+deps.neoforge = "26.1.1.15-beta"
+
+["26.1.2-neoforge"]
+sources.dir = "26.1-26.1.2"
+mod.version = "1.7.3"
+mod.mc_compat = "26.1.2"
+java.release = "25"
+deps.neoforge = "26.1.2.129"
+
+["26.2-neoforge"]
+sources.dir = "26.2"
+mod.version = "1.7.3"
+mod.mc_compat = "26.2"
+java.release = "25"
+deps.neoforge = "26.2.0.95"
+
+["26.3-neoforge"]
+sources.dir = "26.3"
+mod.version = "1.7.3"
+mod.mc_compat = "26.3"
+java.release = "25"
+deps.neoforge = "26.3.0.115"

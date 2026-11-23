@@ -1,9 +1,60 @@
 pluginManagement {
-	repositories {
-		maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
-		mavenCentral()
-		gradlePluginPortal()
-	}
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.kikugie.dev/releases'; name = 'KikuGie Releases' }
+        maven { url = 'https://maven.kikugie.dev/snapshots'; name = 'KikuGie Snapshots' }
+        maven { url = 'https://maven.neoforged.net/releases' }
+        mavenCentral()
+        gradlePluginPortal()
+    }
 }
 
-rootProject.name = 'bundleinventory'
+plugins {
+    // Multi-version, multi-loader build. Each node compiles the decompiled
+    // source of the official Bundle Inventory build for that Minecraft
+    // version line (see src/versions/<era>). Docs: https://stonecutter.kikugie.dev/
+    id 'dev.kikugie.stonecutter' version '0.10'
+
+    // Applies `net.fabricmc.fabric-loom-remap` (obfuscated, <=1.21.11) or
+    // `net.fabricmc.fabric-loom` (unobfuscated, >=26.1) per Fabric node.
+    // https://codeberg.org/KikuGie/loom-back-compat
+    id 'dev.kikugie.loom-back-compat' version '0.4.3'
+
+    // Auto-provision JDKs (Java 21 for 1.21.x nodes, 25 for 26.x nodes).
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+// Loader coverage, from the primary sources:
+//  - Fabric: every version below.
+//  - NeoForge: 1.21.3+ (its 1.21.2 line never got past two abandoned betas).
+//  - Forge: none in range (Forge's last target is 1.21.1).
+//  - Quilt: runs Fabric jars natively, no separate build.
+def fabricNodes = [
+        '1.21.2-fabric', '1.21.3-fabric', '1.21.4-fabric', '1.21.5-fabric',
+        '1.21.6-fabric', '1.21.7-fabric', '1.21.8-fabric',
+        '1.21.9-fabric', '1.21.10-fabric', '1.21.11-fabric',
+        '26.1-fabric', '26.1.1-fabric', '26.1.2-fabric', '26.2-fabric', '26.3-fabric',
+]
+def neoforgeNodes = [
+        '1.21.3-neoforge', '1.21.4-neoforge', '1.21.5-neoforge',
+        '1.21.6-neoforge', '1.21.7-neoforge', '1.21.8-neoforge',
+        '1.21.9-neoforge', '1.21.10-neoforge', '1.21.11-neoforge',
+        '26.1-neoforge', '26.1.1-neoforge', '26.1.2-neoforge', '26.2-neoforge', '26.3-neoforge',
+]
+
+stonecutter {
+    kotlinController = false
+
+    create(rootProject) {
+        // Node name -> logical Minecraft version, so `sc.current.version`
+        // stays a clean version number inside the build scripts.
+        versions(fabricNodes.collectEntries { [it, it.replaceFirst('-fabric$', '')] })
+                .buildscript('fabric.build.gradle')
+        versions(neoforgeNodes.collectEntries { [it, it.replaceFirst('-neoforge$', '')] })
+                .buildscript('neoforge.build.gradle')
+        // The node whose directory state is what lives in git.
+        vcsVersion = '26.3-fabric'
+    }
+}
+
+rootProject.name = 'BundleInventory'

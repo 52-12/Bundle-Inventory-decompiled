@@ -1,0 +1,8 @@
+{
+  "text.autoconfig.bundleinventory.title": "Bundle Inventory Config",
+  "text.autoconfig.bundleinventory.option.bundleInventoryVisibleRows": "Bundle Inventory Visible Rows",
+  "text.autoconfig.bundleinventory.option.shouldPlayBundleInventorySounds": "Play Bundle Inventory Sounds",
+  "text.autoconfig.bundleinventory.option.indicateOpenBundle": "Indicate Open Bundle",
+  "text.autoconfig.bundleinventory.option.showEquipmentSlotsInBundleInventory": "Show Equipment Slots in Bundle Inventory",
+  "text.autoconfig.bundleinventory.option.clientSideItemInsertionChecks": "Client-Side Item Insertion Checks"
+}

@@ -1,0 +1,137 @@
+plugins {
+    // Picks `net.fabricmc.fabric-loom-remap` (<=1.21.11) or
+    // `net.fabricmc.fabric-loom` (>=26.1) for this node, and aliases the
+    // `mod*` dependency configurations plus the `remapJar`/`jar` tasks.
+    id 'dev.kikugie.loom-back-compat'
+}
+
+// Each Fabric node compiles:
+//   - the loader-agnostic game code decompiled from the official Bundle
+//     Inventory build for this Minecraft version line (src/versions/<era>/common),
+//   - plus the Fabric glue (entrypoint, Cloth Config + Mod Menu integration)
+//     from the same official build (src/versions/<era>/fabric).
+// Which era a node maps to, and all per-node values, live in
+// stonecutter.properties.toml.
+
+// NOTE: Stonecutter manages the project identity; no `group` here.
+version = "${property('mod.version')}+mc${stonecutter.current.version}"
+base {
+    archivesName = 'BundleInventory-Fabric'
+}
+
+def eraDir = "${rootDir}/src/versions/${property('sources.dir')}"
+def javaRelease = Integer.parseInt(property('java.release') as String)
+
+repositories {
+    // Cloth Config (optional integration, compile-time).
+    maven {
+        name = 'Shedaniel'
+        url = 'https://maven.shedaniel.me/'
+    }
+    // Mod Menu (optional integration, compile-time).
+    maven {
+        name = 'TerraformersMC'
+        url = 'https://maven.terraformersmc.com/releases/'
+    }
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        // Loader-agnostic game code + Fabric glue; nothing is shared between
+        // eras on purpose, so each node is a faithful recompile of its
+        // official build.
+        java.setSrcDirs(List.of("${eraDir}/common/java", "${eraDir}/fabric/java"))
+        resources.setSrcDirs(List.of(
+                "${eraDir}/fabric/resources",
+                "${eraDir}/mixins",
+                "${eraDir}/packaging",
+        ))
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${stonecutter.current.version}"
+
+    // One Mojang-named common per era, shared with the NeoForge nodes: the
+    // 1.21.x sources are decompiled from the official jars remapped into
+    // Mojang names. On obfuscated versions this applies Mojang's mappings in
+    // dev and Loom remaps the jar (classes, mixins, access widener) to
+    // intermediary; on 26.x it is a no-op because the game ships unobfuscated.
+    loomx.applyMojangMappings()
+
+    // The mod only uses Fabric Loader's entrypoint/API surface.
+    modImplementation "net.fabricmc:fabric-loader:${property('deps.fabric_loader')}"
+
+    // Optional integrations referenced by the mod's source. They are *not*
+    // required at runtime (the mod falls back to its default config without
+    // them), so they are not `include`d.
+    modImplementation "me.shedaniel.cloth:cloth-config-fabric:${property('deps.cloth_config')}"
+    modImplementation "com.terraformersmc:modmenu:${property('deps.modmenu')}"
+
+    compileOnly 'org.jetbrains:annotations:24.0.1'
+}
+
+loom {
+    fabricModJsonPath = file("${eraDir}/fabric/resources/fabric.mod.json")
+    // Authored in the dev namespace (`named` for the intermediary eras —
+    // Loom remaps it to intermediary in the built jar — and `official` on
+    // 26.x, where the game ships unobfuscated).
+    accessWidenerPath = file("${eraDir}/fabric/resources/bundleinventory.accesswidener")
+
+    decompilerOptions.named("vineflower") {
+        options.put("mark-corresponding-synthetics", "1")
+    }
+
+    runConfigs.all {
+        preferGradleTask = true
+        generateRunConfig = true
+        // One run directory per version so worlds/assets never mix eras.
+        runDirectory = file("run/${stonecutter.current.project}")
+        jvmArguments.add("-Dmixin.debug.export=true")
+    }
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.toVersion(javaRelease)
+    targetCompatibility = JavaVersion.toVersion(javaRelease)
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaRelease)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = javaRelease
+}
+
+def mcCompat = property('mod.mc_compat') as String
+
+processResources {
+    def props = [
+            'version'  : project.version.toString(),
+            'minecraft': mcCompat,
+    ]
+    inputs.property('version', props['version'])
+    inputs.property('minecraft', props['minecraft'])
+    filesMatching('fabric.mod.json') {
+        expand(props)
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE_BundleInventory-Fabric')) {
+        rename { "${it}-bundleinventory" }
+    }
+}
+
+// Builds the mod jar for the current node and collects it into `build/libs/`.
+tasks.register('buildAndCollect', Copy) {
+    group = 'build'
+    description = 'Builds mod jars and copies results to `build/libs/`'
+    dependsOn 'build'
+    from(loomx.modJar.flatMap { it.archiveFile }, loomx.modSourcesJar.flatMap { it.archiveFile })
+    into(rootProject.layout.buildDirectory.dir('libs'))
+}

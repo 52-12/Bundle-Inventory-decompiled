@@ -1,0 +1,101 @@
+plugins {
+    // ModDevGradle: NeoForge development plugin (works for every NeoForge
+    // version in range, 21.3 through 26.x).
+    // https://github.com/neoforged/ModDevGradle
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+// Each NeoForge node compiles the same Mojang-named game code as the Fabric
+// node for its Minecraft version (src/versions/<era>/common — decompiled from
+// the official Bundle Inventory build for that line), plus the NeoForge glue
+// in src/versions/<era>/neoforge.
+
+// NOTE: Stonecutter manages the project identity; no `group` here.
+version = "${property('mod.version')}+mc${stonecutter.current.version}"
+base {
+    archivesName = 'BundleInventory-NeoForge'
+}
+
+def eraDir = "${rootDir}/src/versions/${property('sources.dir')}"
+def javaRelease = Integer.parseInt(property('java.release') as String)
+def mcCompat = property('mod.mc_compat') as String
+def neoVersion = property('deps.neoforge') as String
+
+sourceSets {
+    main {
+        java.setSrcDirs(List.of("${eraDir}/common/java", "${eraDir}/neoforge/java"))
+        resources.setSrcDirs(List.of(
+                "${eraDir}/neoforge/resources",
+                "${eraDir}/mixins",
+                "${eraDir}/packaging",
+        ))
+    }
+}
+
+neoForge {
+    version = neoVersion
+
+    // Raise errors when the AT targets are invalid.
+    validateAccessTransformers = true
+    accessTransformers = [file("${eraDir}/neoforge/resources/META-INF/accesstransformer.cfg")]
+
+    runs {
+        client {
+            client()
+            gameDirectory = file("run/${stonecutter.current.project}")
+        }
+    }
+
+    mods {
+        bundleinventory {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.toVersion(javaRelease)
+    targetCompatibility = JavaVersion.toVersion(javaRelease)
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaRelease)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = javaRelease
+}
+
+// Expand the mods.toml template the way the official NeoForge MDK does, so
+// ModDevGradle can read fully-expanded metadata for its run configurations.
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def replaceProperties = [
+            'version'  : project.version.toString(),
+            'minecraft': mcCompat,
+            'neoVersion': neoVersion,
+            'loaderRange': '[1,)',
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "${eraDir}/neoforge/templates"
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE_BundleInventory-Fabric')) {
+        rename { "${it}-bundleinventory" }
+    }
+}
+
+// Builds the mod jar for the current node and collects it into `build/libs/`.
+tasks.register('buildAndCollect', Copy) {
+    group = 'build'
+    description = 'Builds mod jars and copies results to `build/libs/`'
+    dependsOn 'build'
+    from(tasks.named('jar').flatMap { it.archiveFile }, tasks.named('sourcesJar').flatMap { it.archiveFile })
+    into(rootProject.layout.buildDirectory.dir('libs'))
+}

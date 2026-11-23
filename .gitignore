@@ -1,4 +1,7 @@
 .gradle/
 build/
 run/
+# Stonecutter's generated per-node project dirs (root only — NOT src/versions,
+# which holds the committed decompiled sources).
+/versions/
 *.log

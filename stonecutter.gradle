@@ -1,0 +1,9 @@
+// Exactly once, in this file. Stonecutter rewrites this string when switching versions.
+stonecutter.active '26.3-fabric'
+
+// Nothing to preprocess: every node compiles the decompiled sources of the
+// official Bundle Inventory build that targeted it (see src/versions/<era>),
+// split into loader-agnostic `common` code plus per-loader glue.
+// Stonecutter is used purely as the multi-version project generator here.
+stonecutter.parameters {
+}

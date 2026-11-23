@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "bundleinventory",
+  "version": "${version}",
+  "name": "Bundle Inventory",
+  "description": "Adds interactive inventory to Bundle item",
+  "authors": [
+    "Socolio"
+  ],
+  "contact": {},
+  "license": "All Rights Reserved",
+  "icon": "assets/bundleinventory/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.socol.bundleinventory.BundleInventoryFabricMod"
+    ],
+    "modmenu": [
+      "io.socol.bundleinventory.integration.modmenu.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "bundleinventory.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "accessWidener": "bundleinventory.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "minecraft": "${minecraft}",
+    "java": ">=21"
+  }
+}
