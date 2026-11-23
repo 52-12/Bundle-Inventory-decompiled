@@ -253,7 +253,6 @@ mod.mc_compat = "[1.21.6,1.21.9)"
 java.release = "21"
 deps.forge = "56.0.9"
 deps.forge_spec = "56"
-# ForgeGradle 6 era (see settings.gradle).
 deps.eventbus_validator = "7.0-beta.10"
 
 ["1.21.9-1.21.10-forge"]
@@ -264,8 +263,7 @@ mod.mc_compat = "[1.21.9,1.21.11)"
 java.release = "21"
 deps.forge = "59.0.5"
 deps.forge_spec = "59"
-# ForgeGradle 6 era (see settings.gradle).
-deps.eventbus_validator = "7.0-beta.10"
+deps.eventbus_validator = "7.0-beta.12"
 
 ["1.21.11-forge"]
 sources.dir = "1.21.11"

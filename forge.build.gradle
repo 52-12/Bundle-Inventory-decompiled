@@ -1,7 +1,11 @@
 plugins {
-    // ForgeGradle 7 — the dev plugin of the official Forge MDK for the
-    // 1.21.3-1.21.5, 1.21.11 and 26.x lines.
-    // https://github.com/MinecraftForge/MinecraftForge (mdk/build.gradle per branch)
+    // ForgeGradle 7 for every Forge group.
+    //
+    // The official MDKs of the 1.21.6-1.21.10 lines still pin ForgeGradle 6
+    // on Gradle 8, which cannot run inside this Gradle 9 build — but their
+    // userdev configurations are schema-identical to the FG7-supported
+    // neighbours (verified against the -userdev.jar configs of every pin,
+    // see research/forge-mdk.md), so FG7 7.0.40 drives them all.
     id 'net.minecraftforge.gradle' version '7.0.40'
 }
 

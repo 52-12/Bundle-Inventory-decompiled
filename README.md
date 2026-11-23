@@ -24,14 +24,18 @@ loader can honestly run a single jar on:
 
 **NeoForge (9 jars)** and **Forge (9 jars)** — the same Minecraft walls apply.
 NeoForge has no 1.21.2 line (two abandoned betas only) and Forge skipped 1.21.2
-as well; Forge pins come from its own promotions file (53.1.16 … 66.1.9), with
-two dev-toolchain eras: the 1.21.6–1.21.10 Forge groups build with
-ForgeGradle 6 (matching those lines' official MDKs) and everything else with
-ForgeGradle 7. Quilt runs the Fabric jars natively (the mod uses no Fabric
-API, and its `fabricloader >=0.16.x` floor is well under Quilt's reported
-0.19.5), so no separate Quilt build exists — verify with one playtest on
-Quilt. No other loader has builds for any Minecraft version that has the
-bundle item.
+as well; Forge pins come from its own promotions file (53.1.16 … 66.1.9). All
+Forge groups build with ForgeGradle 7: the official 1.21.6–1.21.10 MDKs still
+pin ForgeGradle 6 on Gradle 8, which cannot run in this Gradle 9 build —
+their userdev configurations are schema-identical to the FG7-supported
+neighbours (verified against every pin's `-userdev.jar` config). One real
+namespace difference survives from Forge's history: on 1.21.x, access
+transformers key members by **SRG name** (Forge's own production ATs do;
+the generated per-era ATs follow), while 26.x uses Mojang names. Quilt runs
+the Fabric jars natively (the mod uses no Fabric API, and its
+`fabricloader >=0.16.x` floor is well under Quilt's reported 0.19.5), so no
+separate Quilt build exists — verify with one playtest on Quilt. No other
+loader has builds for any Minecraft version that has the bundle item.
 
 Each jar reports honest provenance, e.g. `BundleInventory-Fabric-1.7.2+mc1.21.6-1.21.8.jar`
 is a recompile of official build **1.7.2** for **Minecraft 1.21.6–1.21.8**,
@@ -85,7 +89,7 @@ src/versions/<era>/
 The build is driven by [Stonecutter](https://stonecutter.kikugie.dev/) with
 [loom-back-compat](https://codeberg.org/KikuGie/loom-back-compat) (Fabric),
 [ModDevGradle](https://github.com/neoforged/ModDevGradle) (NeoForge) and
-ForgeGradle 6/7 (Forge); per-node coordinates live in
+ForgeGradle 7 (Forge); per-node coordinates live in
 `stonecutter.properties.toml`.
 
 ## Building
