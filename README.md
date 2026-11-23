@@ -185,10 +185,16 @@ Kept deliberately minimal, and all mechanical:
   covers (the official jars used broader ranges), and the NeoForge
   `neoforge.mods.toml` marks the mod client-only (`dist=CLIENT`,
   `displayTest="IGNORE_ALL_VERSION"`).
+- **Creative-inventory fix, backported.** The official pre-1.21.11 jars gate the
+  creative-inventory shift-right-click on the menu slot id
+  (`slotId < 9 || slotId >= 45`). On the creative screen only the "Survival
+  Inventory" tab wraps player slots with those ids; on other tabs the slots are
+  appended after the picker, so the click fell through to vanilla and deleted
+  the bundle. All eras now use the upstream fix
+  (`52-12/Bundle-Inventory-decompiled@92d0dcbf`): only the container +
+  `getContainerSlot() < 36` check.
 
-Behavior otherwise matches each official build per version — including the
-pre-1.21.11 creative-inventory guard, which the author changed in the mc1.21.11
-build (older versions keep the guard their official jars shipped with).
+Behavior otherwise matches each official build per version.
 
 ## License / provenance
 

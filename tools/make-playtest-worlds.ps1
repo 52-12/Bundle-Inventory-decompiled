@@ -80,7 +80,7 @@ function Write-TextFile([string]$Path, [string]$Text) {
     [System.IO.File]::WriteAllText($Path, $Text, (New-Object System.Text.UTF8Encoding($false)))
 }
 
-function Write-Datapack([string]$WorldDir, [string]$PackMeta) {
+function Write-Datapack([string]$WorldDir, [string]$PackMeta, [string]$GameruleStyle) {
     $dp = Join-Path $WorldDir 'datapacks\bundleinventory_playtest'
     Remove-Item $dp -Recurse -Force -ErrorAction SilentlyContinue
     foreach ($d in @('data\bi\function', 'data\bi\tags\function', 'data\minecraft\tags\function')) {
@@ -91,20 +91,36 @@ function Write-Datapack([string]$WorldDir, [string]$PackMeta) {
     Write-TextFile (Join-Path $dp 'data\bi\function\tick.mcfunction') "execute as @a unless entity @s[tag=bundleinventory_playtest_kit] run function bi:kit`n"
     Write-TextFile (Join-Path $dp 'data\bi\tags\function\tick.json') '{"values":["bi:tick"]}'
     # World rules run on every load; this avoids editing era-specific level.dat
-    # fields (game_rules moved out of level.dat in 1.21.9+).
-    $load = @(
-        'gamerule doDaylightCycle false',
-        'gamerule doWeatherCycle false',
-        'gamerule doMobSpawning false',
-        'gamerule doFireTick false',
-        'gamerule mobGriefing false',
-        'gamerule keepInventory true',
-        'gamerule announceAdvancements false',
-        'gamerule randomTickSpeed 0',
-        'gamerule sendCommandFeedback true',
-        'time set noon',
-        'weather clear'
-    ) -join "`n"
+    # fields (game_rules moved out of level.dat in 1.21.9+). 1.21.11 renamed
+    # every rule id to snake_case (advance_time, keep_inventory, ...), so the
+    # command names differ by era.
+    $load = if ($GameruleStyle -eq 'named') {
+        @(
+            'gamerule advance_time false',
+            'gamerule advance_weather false',
+            'gamerule spawn_mobs false',
+            'gamerule mob_griefing false',
+            'gamerule keep_inventory true',
+            'gamerule show_advancement_messages false',
+            'gamerule random_tick_speed 0',
+            'gamerule fire_spread_radius_around_player 0',
+            'time set noon',
+            'weather clear'
+        ) -join "`n"
+    } else {
+        @(
+            'gamerule doDaylightCycle false',
+            'gamerule doWeatherCycle false',
+            'gamerule doMobSpawning false',
+            'gamerule doFireTick false',
+            'gamerule mobGriefing false',
+            'gamerule keepInventory true',
+            'gamerule announceAdvancements false',
+            'gamerule randomTickSpeed 0',
+            'time set noon',
+            'weather clear'
+        ) -join "`n"
+    }
     Write-TextFile (Join-Path $dp 'data\bi\function\load.mcfunction') ($load + "`n")
     Write-TextFile (Join-Path $dp 'data\minecraft\tags\function\load.json') '{"values":["bi:load"]}'
 }
@@ -159,6 +175,14 @@ function Set-LaunchWorld([string]$InstanceDir) {
 }
 
 # ------------------------------------------------------------- helpers -----
+function Test-McAtLeast([string]$mc, [int]$major, [int]$minor, [int]$patch) {
+    $p = @($mc.Split('.') | ForEach-Object { [int]$_ })
+    while ($p.Count -lt 3) { $p += 0 }
+    if ($p[0] -ne $major) { return $p[0] -gt $major }
+    if ($p[1] -ne $minor) { return $p[1] -gt $minor }
+    return $p[2] -ge $patch
+}
+
 function Get-VersionInfo([string]$mc) {
     $jar = Join-Path $PrismData "libraries\com\mojang\minecraft\$mc\minecraft-$mc-client.jar"
     if (-not (Test-Path $jar)) { throw "missing client jar for $mc" }
@@ -181,6 +205,8 @@ function Get-VersionInfo([string]$mc) {
         Mc = $mc
         JavaComponent = $version.java_component
         PackMeta = $packMeta
+        # 1.21.11 introduced the namespaced/snake_case gamerule registry.
+        GameruleStyle = if ((Test-McAtLeast $mc 1 21 11)) { 'named' } else { 'legacy' }
     }
 }
 
@@ -284,7 +310,7 @@ foreach ($mc in ($specs | Select-Object -ExpandProperty Mc | Sort-Object -Unique
 
     $world = Join-Path $run $WorldName
     if (-not (Test-Path (Join-Path $world 'level.dat'))) { $failures += "$mc (no level.dat)"; continue }
-    Write-Datapack $world $info.PackMeta
+    Write-Datapack $world $info.PackMeta $info.GameruleStyle
     Enable-Cheats (Join-Path $world 'level.dat')
 
     # Second start: the server parses every datapack function and reports
