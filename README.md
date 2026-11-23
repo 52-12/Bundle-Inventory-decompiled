@@ -193,6 +193,24 @@ Kept deliberately minimal, and all mechanical:
   the bundle. All eras now use the upstream fix
   (`52-12/Bundle-Inventory-decompiled@92d0dcbf`): only the container +
   `getContainerSlot() < 36` check.
+- **Fullness-bar style option (new).** `useBossBarFullness` (default on) is
+  exposed in the Cloth config on Fabric and defaults to on everywhere else. The
+  boss-bar style uses the vanilla `boss_bar/*` sprites on every era; the smooth
+  style uses the original 1.21.2–1.21.4 fill bar colours. This is an addition,
+  not a backport of an upstream option.
+- **Client-side insertion checks, backported.** 1.21.5 added the
+  `clientSideItemInsertionChecks` config (default true). The check methods
+  already existed in 1.21.2–1.21.4; they are now gated by the same config there.
+- **Click resync fix.** Bundle clicks now send the real container state id
+  (`containerMenu.getStateId()`) instead of `-1`. With `-1` the server answered
+  every insert/remove with a full container broadcast (including the bundle
+  contents) instead of an incremental update.
+- **Mixin metadata.** Every mixin config declares `minVersion: "0.8"`; Forge's
+  Mixin logged an error without it.
+
+The 1.21.2–1.21.4 screen art still uses the official `bundle.png` layout; the
+vanilla-style `UIDrawer` plate introduced in 1.21.5 was **not** backported
+(cosmetic only).
 
 Behavior otherwise matches each official build per version.
 
