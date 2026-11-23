@@ -535,7 +535,8 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          this.networkHandler
             .send(
                new ServerboundContainerClickPacket(
-                  BundleInventoryHandler.this.containerId, this.player.containerMenu.getStateId(), (short)slotId, (byte)button, ClickType.PICKUP, new Int2ObjectOpenHashMap(), HashedStack.EMPTY
+                  BundleInventoryHandler.this.containerId, this.player.containerMenu.getStateId(), (short)slotId, (byte)button, ClickType.PICKUP, new Int2ObjectOpenHashMap(),
+                  HashedStack.create(BundleInventoryHandler.this.getCarried(), this.networkHandler.decoratedHashOpsGenenerator())
                )
             );
          return this;
