@@ -16,7 +16,51 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 public class Hooks {
+   private static final java.util.Map<Class<?>, java.lang.reflect.Field> SLOT_TARGET_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
    public Hooks() {
+   }
+
+   /**
+    * CreativeModeInventoryScreen.SlotWrapper is package-private in vanilla, so it cannot be
+    * referenced from here. It holds exactly one Slot-typed field (the wrapped slot); reading it
+    * by type works on every loader, while the wrapper's own getContainerSlot() returns the menu
+    * index and would reject hotbar slots.
+    */
+   @Nullable
+   private static Slot unwrapSlot(Slot slot) {
+      Class<?> type = slot.getClass();
+      if (type == Slot.class) {
+         return slot;
+      }
+
+      java.lang.reflect.Field field = SLOT_TARGET_CACHE.get(type);
+      if (field == null) {
+         for (java.lang.reflect.Field candidate : type.getDeclaredFields()) {
+            if (candidate.getType() == Slot.class) {
+               try {
+                  candidate.setAccessible(true);
+               } catch (RuntimeException ignored) {
+               }
+
+               field = candidate;
+               break;
+            }
+         }
+
+         if (field == null) {
+            return slot;
+         }
+
+         SLOT_TARGET_CACHE.put(type, field);
+      }
+
+      try {
+         Object value = field.get(slot);
+         return value instanceof Slot target && target != slot ? target : slot;
+      } catch (ReflectiveOperationException | RuntimeException ignored) {
+         return slot;
+      }
    }
 
    @Nullable
@@ -61,6 +105,9 @@ public class Hooks {
       LocalPlayer player = client.player;
       if (player != null && slot != null && handler != null) {
          boolean isCreativeInventory = handler instanceof ItemPickerMenu;
+         if (isCreativeInventory) {
+            slot = unwrapSlot(slot);
+         }
 
          if (slot.container != player.getInventory()) {
             return false;

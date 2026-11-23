@@ -161,14 +161,18 @@ Kept deliberately minimal, and all mechanical:
 - **Decompiler artifacts.** Mixin classes cast themselves through
   `(Object)` (`(AbstractContainerScreen)(Object)this`) — the cast the
   decompiler dropped and Mixin needs to compile.
-- **Config screens.** Every client loader reads the same
-  `config/bundleinventory.properties`. Fabric exposes the settings screen
-  through Mod Menu, Forge through `ConfigScreenHandler.ConfigScreenFactory`
-  (Config button in the Mods list) and NeoForge through
-  `IConfigScreenFactory` (Config button). The screen is a plain vanilla-widget
-  `Screen`, so Cloth Config is optional and not required for the UI. NilLoader
-  has no config API, so it reads the properties file only. Both non-Fabric
-  entrypoints declare the mod client-only (NeoForge `dist=CLIENT`; Forge
+- **Config screens.** Settings live in `config/bundleinventory.properties` on
+  every loader, with one exception: Fabric/Quilt **with Cloth Config
+  installed** read `config/bundleinventory.json5` instead, because the
+  original Cloth AutoConfig screen is what edits them there. Fabric exposes
+  its settings through Mod Menu (Cloth screen when Cloth is present, the
+  built-in vanilla-widget screen otherwise), Forge through
+  `ConfigScreenHandler.ConfigScreenFactory` (Config button in the Mods list)
+  and NeoForge through `IConfigScreenFactory` (Config button). The built-in
+  screen writes the properties file, so Cloth is optional, and `fabric.mod.json`
+  lists `modmenu` and `cloth-config` under `suggests`. NilLoader has no config
+  API, so it reads the properties file only. Both non-Fabric entrypoints
+  declare the mod client-only (NeoForge `dist=CLIENT`; Forge
   `clientSideOnly=true`), and their jars carry the `pack.mcmeta` those loaders
   require (copied from each line's official MDK).
 - **NilLoader build.** The three SpongePowered mixins become Mini transformers

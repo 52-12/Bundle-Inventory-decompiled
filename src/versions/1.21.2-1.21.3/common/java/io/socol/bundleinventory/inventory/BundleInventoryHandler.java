@@ -20,7 +20,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ArmorSlot;
 import net.minecraft.world.inventory.ClickAction;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.InventoryMenu;
@@ -80,7 +79,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          for (int i = 0; i < 4; i++) {
             EquipmentSlot equipmentSlot = EQUIPMENT_SLOT_ORDER[i];
             ResourceLocation background = EMPTY_ARMOR_SLOT_TEXTURES.get(equipmentSlot);
-            this.addSlot(new ArmorSlot(playerInventory, player, equipmentSlot, 39 - i, -28, height - 100 + i * 18, background));
+            this.addSlot(this.createArmorSlot(playerInventory, player, equipmentSlot, 39 - i, -28, height - 100 + i * 18, background));
          }
       } else {
          for (int i = 0; i < 4; i++) {
@@ -137,6 +136,29 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
 
    public NonNullList<Slot> getBundleSlots() {
       return this.bundleSlots;
+   }
+
+   private Slot createArmorSlot(
+      Inventory playerInventory, Player player, EquipmentSlot equipmentSlot, int index, int x, int y, ResourceLocation icon
+   ) {
+      return new Slot(playerInventory, index, x, y) {
+         public int getMaxStackSize() {
+            return 1;
+         }
+
+         public boolean mayPlace(ItemStack stack) {
+            return player.getEquipmentSlotForItem(stack) == equipmentSlot;
+         }
+
+         public void setByPlayer(ItemStack stack, ItemStack previousStack) {
+            player.onEquipItem(equipmentSlot, previousStack, stack);
+            super.setByPlayer(stack, previousStack);
+         }
+
+         public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
+            return Pair.of(InventoryMenu.BLOCK_ATLAS, icon);
+         }
+      };
    }
 
    private void updateRowsCount() {

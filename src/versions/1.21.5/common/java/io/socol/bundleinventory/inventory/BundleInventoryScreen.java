@@ -317,7 +317,7 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       } else {
          return !BundleInventoryMod.config().showEquipmentSlotsInBundleInventory()
             ? true
-            : mouseX < left - 36.0 || mouseY < (double)top + this.imageWidth - 108.0 || mouseX >= left - 4 || mouseY >= top + this.imageHeight;
+            : mouseX < left - 36.0 || mouseY < (double)top + this.imageHeight - 108.0 || mouseX >= left - 4 || mouseY >= top + this.imageHeight;
       }
    }
 
