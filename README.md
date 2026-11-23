@@ -34,7 +34,9 @@ neighbours (verified against every pin's `-userdev.jar` config). One real
 namespace difference survives from Forge's history: on 1.21.x, access
 transformers key members by **SRG name** (Forge's own production ATs do;
 the generated per-era ATs follow), while 26.x uses Mojang names. Quilt runs
-the Fabric jars natively (the mod uses no Fabric API, and its
+the Fabric jars natively (they nest Fabric API's `fabric-api-base` and
+`fabric-resource-loader` modules jar-in-jar to mount the mod's assets, which
+Quilt Loader supports exactly like Fabric Loader, and the
 `fabricloader >=0.16.x` floor is well under Quilt's reported 0.19.5), so no
 separate Quilt build exists — verify with one playtest on Quilt. No other
 loader has builds for any Minecraft version that has the bundle item.

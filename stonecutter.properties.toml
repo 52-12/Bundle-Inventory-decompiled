@@ -28,6 +28,11 @@ mod.mc_compat = ">=1.21.2 <1.21.4"
 java.release = "21"
 deps.cloth_config = "16.0.143"
 deps.modmenu = "12.0.1"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "0.4.48+c47b9d4373"
+deps.fabric_resource_loader = "3.0.5+c47b9d4373"
+deps.fabric_resource_loader_v1 = ""
 
 ["1.21.4-fabric"]
 # Official build: Bundle Inventory 1.6.1 (mc 1.21.4). Cannot merge with
@@ -40,6 +45,11 @@ mod.mc_compat = "1.21.4"
 java.release = "21"
 deps.cloth_config = "17.0.144"
 deps.modmenu = "13.0.4"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "0.4.54+b47eab6b04"
+deps.fabric_resource_loader = "3.1.1+360374ac04"
+deps.fabric_resource_loader_v1 = ""
 
 ["1.21.5-fabric"]
 # Official build: Bundle Inventory 1.7.1 (mc 1.21.5). Cannot merge with either
@@ -52,6 +62,11 @@ mod.mc_compat = "1.21.5"
 java.release = "21"
 deps.cloth_config = "18.0.145"
 deps.modmenu = "14.0.2"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "0.4.62+73a52b4b49"
+deps.fabric_resource_loader = "3.1.7+847e5f5c49"
+deps.fabric_resource_loader_v1 = ""
 
 ["1.21.6-1.21.8-fabric"]
 # Official build: Bundle Inventory 1.7.2 (mc 1.21.6-1.21.8). The author's own
@@ -63,6 +78,11 @@ mod.mc_compat = ">=1.21.6 <1.21.9"
 java.release = "21"
 deps.cloth_config = "19.0.147"
 deps.modmenu = "15.0.2"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "0.4.64+9ec45cd896"
+deps.fabric_resource_loader = "3.1.11+946bf4c396"
+deps.fabric_resource_loader_v1 = ""
 
 ["1.21.9-1.21.10-fabric"]
 # Official build: Bundle Inventory 1.7.3 (mc 1.21.9-1.21.10). The author's own
@@ -75,6 +95,11 @@ mod.mc_compat = ">=1.21.9 <1.21.11"
 java.release = "21"
 deps.cloth_config = "20.0.149"
 deps.modmenu = "16.0.1"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "1.0.0+14b92d897d"
+deps.fabric_resource_loader = "3.2.2+3388a3b27d"
+deps.fabric_resource_loader_v1 = "1.0.2+225bca407d"
 
 ["1.21.11-fabric"]
 # Official build: Bundle Inventory 1.7.3 (mc 1.21.11).
@@ -85,6 +110,11 @@ mod.mc_compat = "1.21.11"
 java.release = "21"
 deps.cloth_config = "21.11.153"
 deps.modmenu = "17.0.1"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "1.0.5+4ebb5c083e"
+deps.fabric_resource_loader = "3.3.4+4fc5413f3e"
+deps.fabric_resource_loader_v1 = "1.0.10+78c8b4663e"
 
 ["26.1-26.1.2-fabric"]
 # No official 26.1 build exists; this is the official 26.2 source adapted to
@@ -98,6 +128,11 @@ mod.mc_compat = ">=26.1 <26.2"
 java.release = "25"
 deps.cloth_config = "26.1.154"
 deps.modmenu = "18.0.2"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "2.0.3+ece0632347"
+deps.fabric_resource_loader = "3.3.16+4fc5413f47"
+deps.fabric_resource_loader_v1 = "2.0.9+d871b99e47"
 
 ["26.2-fabric"]
 # Official build: Bundle Inventory 1.7.3 (mc 26.2). 26.3 is a hard wall
@@ -109,6 +144,11 @@ mod.mc_compat = "~26.2"
 java.release = "25"
 deps.cloth_config = "26.2.155"
 deps.modmenu = "20.0.3"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "2.0.4+ece063239e"
+deps.fabric_resource_loader = "3.3.20+4fc5413f9e"
+deps.fabric_resource_loader_v1 = "2.0.13+9edec1269e"
 
 ["26.3-fabric"]
 # Official build: Bundle Inventory 1.7.3 (mc 26.3).
@@ -119,6 +159,11 @@ mod.mc_compat = "~26.3"
 java.release = "25"
 deps.cloth_config = "26.3.159"
 deps.modmenu = "21.0.1"
+# Fabric API modules the official build bundled jar-in-jar: Fabric
+# Loader has no resource-pack support, these mount the mod assets.
+deps.fabric_api_base = "2.0.6+fcdff87f5d"
+deps.fabric_resource_loader = "3.3.27+4fc5413f5d"
+deps.fabric_resource_loader_v1 = "3.1.0+5af7744b5d"
 
 # -------------------------------------------------------------- neoforge ----
 # NeoForge pins from https://maven.neoforged.net/releases/net/neoforged/neoforge

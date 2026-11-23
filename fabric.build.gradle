@@ -35,6 +35,11 @@ repositories {
         name = 'TerraformersMC'
         url = 'https://maven.terraformersmc.com/releases/'
     }
+    // Fabric API modules, bundled jar-in-jar below.
+    maven {
+        name = 'Fabric'
+        url = 'https://maven.fabricmc.net/'
+    }
     mavenCentral()
 }
 
@@ -72,6 +77,20 @@ dependencies {
     modImplementation "com.terraformersmc:modmenu:${property('deps.modmenu')}"
 
     compileOnly 'org.jetbrains:annotations:24.0.1'
+
+    // Mod assets (the GUI texture, the bundled lang files) are mounted by
+    // Fabric API's resource loader. Fabric Loader itself has no resource-pack
+    // support (loader 0.20.1 contains no ResourcePack classes), so the official
+    // builds bundled these modules jar-in-jar; we nest the same module versions
+    // per era (see deps.fabric_* in stonecutter.properties.toml). From 1.21.9
+    // the loader was split into v0 (shim, 1.21.9-1.21.10 still holds the
+    // implementation) and v1, so both are bundled where v1 exists.
+    include "net.fabricmc.fabric-api:fabric-api-base:${property('deps.fabric_api_base')}"
+    include "net.fabricmc.fabric-api:fabric-resource-loader-v0:${property('deps.fabric_resource_loader')}"
+    def resourceLoaderV1 = property('deps.fabric_resource_loader_v1') as String
+    if (resourceLoaderV1) {
+        include "net.fabricmc.fabric-api:fabric-resource-loader-v1:${resourceLoaderV1}"
+    }
 }
 
 loom {
