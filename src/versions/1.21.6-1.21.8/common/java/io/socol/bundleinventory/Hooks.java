@@ -4,7 +4,6 @@ import io.socol.bundleinventory.inventory.BundleInventoryHandler;
 import io.socol.bundleinventory.inventory.BundleInventoryScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.ItemPickerMenu;
-import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.SlotWrapper;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -59,10 +58,6 @@ public class Hooks {
       LocalPlayer player = client.player;
       if (player != null && slot != null && handler != null) {
          boolean isCreativeInventory = handler instanceof ItemPickerMenu;
-         if (isCreativeInventory && slot instanceof SlotWrapper creativeSlot) {
-            slot = creativeSlot.target;
-            slotId = slot.index;
-         }
 
          if (slot.container != player.getInventory()) {
             return false;

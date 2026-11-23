@@ -59,6 +59,8 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
    private int selectedRow;
    private int rowsCount;
    private final NonNullList<Slot> bundleSlots = NonNullList.create();
+   private static final boolean DEBUG = new java.io.File("bundleinventory-debug.txt").isFile();
+   private static long debugSend;
 
    public BundleInventoryHandler(Inventory playerInventory, BundleInventory bundleInventory, int syncId, int rowsVisible, boolean openInventoryOnClose) {
       super(MenuType.GENERIC_9x3, syncId);
@@ -230,6 +232,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
    }
 
    public void handleBundleSlotAction(int bundleInnerSlot, int button, ContainerInput actionType) {
+      long debugStart = System.nanoTime();
       LocalPlayer player = Minecraft.getInstance().player;
       if (player != null && (button == 0 || button == 1)) {
          ClickAction clickType = button == 0 ? ClickAction.PRIMARY : ClickAction.SECONDARY;
@@ -241,6 +244,9 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          } else if (actionType == ContainerInput.THROW) {
             this.dropItemFromBundle(player, bundleInnerSlot);
          }
+      }
+      if (DEBUG) {
+         System.out.println("[BI] action " + String.format("%.1f", (System.nanoTime() - debugStart) / 1000.0) + "us");
       }
    }
 
@@ -447,6 +453,24 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
       }
    }
 
+   @Override
+   public void setItem(int slotId, int stateId, ItemStack stack) {
+      if (DEBUG) {
+         System.out.println("[BI] setItem slot=" + slotId + " state=" + stateId
+            + " dt=" + String.format("%.2f", (System.nanoTime() - debugSend) / 1_000_000.0) + "ms");
+      }
+      super.setItem(slotId, stateId, stack);
+   }
+
+   @Override
+   public void initializeContents(int stateId, java.util.List<ItemStack> items, ItemStack carried) {
+      if (DEBUG) {
+         System.out.println("[BI] FULL state=" + stateId + " items=" + items.size()
+            + " dt=" + String.format("%.2f", (System.nanoTime() - debugSend) / 1_000_000.0) + "ms");
+      }
+      super.initializeContents(stateId, items, carried);
+   }
+
    public void tick() {
       this.updateRowsCount();
    }
@@ -531,6 +555,12 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
 
       public BundleInventoryHandler.Robot clickSlot(ClickAction clickType, int slotId) {
          int button = clickType == ClickAction.PRIMARY ? 0 : 1;
+         if (DEBUG) {
+            debugSend = System.nanoTime();
+            ItemStack held = BundleInventoryHandler.this.getCarried();
+            System.out.println("[BI] click slot=" + slotId + " state=" + this.player.containerMenu.getStateId()
+               + " carried=" + held.getItem() + "x" + held.getCount());
+         }
          this.networkHandler
             .send(
                new ServerboundContainerClickPacket(

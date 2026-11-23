@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.socol.bundleinventory.BundleInventoryMod;
-import io.socol.bundleinventory.mixin.client.AbstractContainerScreenAccessor;
 import io.socol.bundleinventory.util.StepColor;
 import io.socol.bundleinventory.util.UIDrawer;
 import java.util.List;
@@ -285,7 +284,6 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       ClickType actionType = shiftClick ? ClickType.QUICK_MOVE : ClickType.PICKUP;
       int slotIndex = bundleSlot.getContainerSlot();
       ((BundleInventoryHandler)this.menu).handleBundleSlotAction(slotIndex, button, actionType);
-      ((AbstractContainerScreenAccessor)this).setSkipNextRelease(true);
       return true;
    }
 

@@ -1,5 +1,3 @@
 accessWidener	v2	named
-accessible	class	net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper
-accessible	field	net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper	target	Lnet/minecraft/world/inventory/Slot;
 accessible	field	net/minecraft/client/renderer/entity/ItemRenderer	itemModelShaper	Lnet/minecraft/client/renderer/ItemModelShaper;
 accessible	class	net/minecraft/world/inventory/ArmorSlot

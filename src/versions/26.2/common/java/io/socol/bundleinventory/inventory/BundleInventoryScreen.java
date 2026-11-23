@@ -264,7 +264,6 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       ContainerInput actionType = shiftClick ? ContainerInput.QUICK_MOVE : ContainerInput.PICKUP;
       int slotIndex = bundleSlot.getContainerSlot();
       ((BundleInventoryHandler)this.menu).handleBundleSlotAction(slotIndex, click.button(), actionType);
-      this.skipNextRelease = true;
       return true;
    }
 
