@@ -375,17 +375,56 @@ deps.eventbus_validator = "7.0.6"
 # mount a resource pack). The three mixins become Mini transformers; the
 # build compiles against a widened copy of the client jar.
 
+["1.21.2-1.21.3-nil"]
+sources.dir = "1.21.2-1.21.3"
+mod.version = "1.6.0"
+mod.mc_label = "1.21.2-1.21.3"
+java.release = "21"
+
+["1.21.4-nil"]
+sources.dir = "1.21.4"
+mod.version = "1.6.1"
+mod.mc_label = "1.21.4"
+java.release = "21"
+
+["1.21.5-nil"]
+sources.dir = "1.21.5"
+mod.version = "1.7.1"
+mod.mc_label = "1.21.5"
+java.release = "21"
+
+["1.21.6-1.21.8-nil"]
+sources.dir = "1.21.6-1.21.8"
+mod.version = "1.7.2"
+mod.mc_label = "1.21.6-1.21.8"
+java.release = "21"
+
+["1.21.9-1.21.10-nil"]
+sources.dir = "1.21.9-1.21.10"
+mod.version = "1.7.3"
+mod.mc_label = "1.21.9-1.21.10"
+java.release = "21"
+
+["1.21.11-nil"]
+sources.dir = "1.21.11"
+mod.version = "1.7.3"
+mod.mc_label = "1.21.11"
+java.release = "21"
+
 ["26.1-26.1.2-nil"]
 sources.dir = "26.1-26.1.2"
 mod.version = "1.7.3"
 mod.mc_label = "26.1-26.1.2"
+java.release = "25"
 
 ["26.2-nil"]
 sources.dir = "26.2"
 mod.version = "1.7.3"
 mod.mc_label = "26.2"
+java.release = "25"
 
 ["26.3-nil"]
 sources.dir = "26.3"
 mod.version = "1.7.3"
 mod.mc_label = "26.3"
+java.release = "25"

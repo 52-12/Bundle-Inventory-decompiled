@@ -176,14 +176,28 @@ Kept deliberately minimal, and all mechanical:
   `clientSideOnly=true`), and their jars carry the `pack.mcmeta` those loaders
   require (copied from each line's official MDK).
 - **NilLoader build.** The three SpongePowered mixins become Mini transformers
-  that call the same `Hooks` methods (NilLoader does not support Mixin), and
-  the access widener becomes a runtime access-flag transformer; the build
-  additionally compiles against a widened copy of the client jar because
-  javac enforces access against the raw jar. No config screen, and no dev
-  environment: iterate by dropping the jar into `nilmods/` and restarting.
-  With `standalone` enabled the jar embeds NilLoader, so it works directly as
-  `-javaagent:`. Its metadata (`bundleinventory.nilmod.css`) carries no
-  dependency or Minecraft-version fields — NilLoader has no version gating.
+  that call the same `Hooks` methods (NilLoader does not support Mixin). Six
+  jars cover 1.21.2-1.21.11 and three cover 26.x; the jar embeds NilLoader so
+  it runs directly as `-javaagent:` with no loader installed. Two modes:
+  - **26.x** is unobfuscated, so no mapping layer is involved.
+  - **1.21.x is obfuscated.** Those nodes download Mojang's client mappings
+    and use them twice: to rewrite the client jar to named classes for javac,
+    and to emit `META-INF/nil/mappings.json` so NilLoader remaps this mod's
+    classes and Mini patch strings when they load. Lorenz's runtime
+    inheritance provider only sees obfuscated classes, so the mappings are
+    **flattened**: every Minecraft member our compiled classes reference -
+    including inherited calls such as `this.addSlot(...)` and interface
+    methods like `ItemStack.get(...)` - gets a direct entry under the
+    call-site owner. Access-widened members ride along in the same file's
+    `widen` block, so no Fabric access widener is involved.
+  - Premain runs before NilLoader freezes its mappings and classes loaded
+    before the freeze are never remapped, so the mod initialises lazily from
+    the patched call sites (`NilBootstrap`) rather than at premain.
+
+  No config screen (properties file only) and no dev environment: iterate by
+  dropping the jar into the working directory and restarting. Its metadata
+  (`bundleinventory.nilmod.css`) carries no dependency or Minecraft-version
+  fields - NilLoader has no version gating.
 - **26.1 / 26.1.1 / 26.1.2.** The author never published a 26.1 build; these
   nodes compile the official 26.2 source with the one 26.1 difference applied
   (`Minecraft.screen` field instead of the 26.2 `Minecraft.gui.screen()`

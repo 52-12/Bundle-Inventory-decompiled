@@ -42,7 +42,10 @@ base {
 
 def eraDir = "${rootDir}/src/versions/${property('sources.dir')}"
 def mcVersion = stonecutter.current.version
-def javaRelease = 25 // 26.x game classes are major 69: javac must be JDK 25
+def javaRelease = (property('java.release') ?: '25') as int
+// 26.x ships Mojang names; everything below is obfuscated at runtime and
+// needs mappings so NilLoader can remap this mod and its Mini patches.
+def obfuscated = !mcVersion.startsWith('26.')
 
 repositories {
     maven {
@@ -150,6 +153,367 @@ def resolveGame = tasks.register('resolveGame') {
     }
 }
 
+// --------------------------------------------------------------- mappings ---
+// Obfuscated builds need a named jar to compile against and a NilLoader
+// mappings.json so the mod's own classes and patch strings are remapped at
+// load time. Both come from Mojang's published client mappings.
+
+def mappingsTxt = layout.buildDirectory.file('nil-mappings/client_mappings.txt')
+
+def downloadMappings = tasks.register('downloadMappings') {
+    outputs.file(mappingsTxt)
+    doLast {
+        File out = mappingsTxt.get().asFile
+        out.parentFile.mkdirs()
+        if (!obfuscated) {
+            out.text = ''
+            return
+        }
+        def slurper = new JsonSlurper()
+        def manifest = slurper.parse(URI.create('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json').toURL())
+        def entry = manifest.versions.find { it.id == mcVersion }
+        if (entry == null) throw new GradleException("unknown Minecraft version: ${mcVersion}")
+        def vjson = slurper.parse(URI.create(entry.url).toURL())
+        def cm = vjson.downloads?.client_mappings
+        if (cm == null) throw new GradleException("no client mappings published for ${mcVersion}")
+        logger.lifecycle("Downloading Mojang mappings for ${mcVersion}")
+        out.setText(URI.create(cm.url).toURL().getText('UTF-8'), 'UTF-8')
+    }
+}
+
+def mappingsJsonDir = layout.buildDirectory.dir('nil-mappings-json')
+
+def namedJar = gameDir.map { it.file('client-named.jar') }
+
+def generateMappings = tasks.register('generateMappings') {
+    dependsOn downloadMappings, 'compileJava'
+    inputs.file(mappingsTxt)
+    inputs.files(sourceSets.main.output.classesDirs)
+    if (obfuscated) {
+        inputs.file(namedJar)
+    }
+    outputs.dir(mappingsJsonDir)
+    doLast {
+        File dir = new File(mappingsJsonDir.get().asFile, 'META-INF/nil')
+        dir.mkdirs()
+        File json = new File(dir, 'mappings.json')
+        if (!obfuscated) {
+            json.delete()
+            return
+        }
+        def parsed = parseMojmap(mappingsTxt.get().asFile)
+        def byName = [:]
+        def namedMethods = [:]
+        def namedFields = [:]
+        parsed.each { c ->
+            byName[c.named] = c
+            c.methods.each { m -> namedMethods[c.named + '.' + m.name + m.desc] = m.obf }
+            c.fields.each { f -> namedFields[c.named + '.' + f.name + ':' + f.desc] = f.obf }
+        }
+
+        // Hierarchy of the named game jar (superclass + interfaces) so inherited
+        // references can be resolved here instead of relying on NilLoader's
+        // runtime inheritance provider, which only sees obfuscated classes.
+        def hierarchy = [:]
+        new ZipFile(namedJar.get().asFile).withCloseable { z ->
+            z.entries().each { e ->
+                if (e.name.endsWith('.class')) {
+                    def cr = new ClassReader(z.getInputStream(e).bytes)
+                    def parents = []
+                    if (cr.superName != null) parents << cr.superName
+                    if (cr.interfaces != null) parents.addAll(cr.interfaces)
+                    hierarchy[cr.className] = parents
+                }
+            }
+        }
+
+        def extraMethods = [:].withDefault { [:] }
+        def extraFields = [:].withDefault { [:] }
+        def resolve = { Map table, Map<Map> target, String owner, String key ->
+            def queue = new java.util.ArrayDeque<String>()
+            queue.add(owner)
+            def seen = new HashSet<String>()
+            while (!queue.isEmpty()) {
+                def cls = queue.poll()
+                if (!seen.add(cls)) continue
+                def hit = table.get(cls + '.' + key)
+                if (hit != null) {
+                    target[owner][key] = hit
+                    return
+                }
+                hierarchy.get(cls)?.each { queue.add(it) }
+            }
+        }
+
+        // Scan our compiled classes: record their hierarchy and every Minecraft
+        // member reference, including inherited calls whose owner is our class.
+        sourceSets.main.output.classesDirs.each { clsDir ->
+            if (!clsDir.exists()) return
+            fileTree(clsDir).matching { include '**/*.class' }.each { f ->
+                def node = new org.objectweb.asm.tree.ClassNode()
+                new ClassReader(f.bytes).accept(node, 0)
+                def parents = []
+                if (node.superName != null) parents << node.superName
+                if (node.interfaces != null) parents.addAll(node.interfaces)
+                hierarchy[node.name] = parents
+                node.methods.each { mn ->
+                    // declarations: overriding a game method must rename too
+                    resolve(namedMethods, extraMethods, node.name, mn.name + mn.desc)
+                    mn.instructions.each { insn ->
+                        if (insn instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                            resolve(namedMethods, extraMethods, insn.owner, insn.name + insn.desc)
+                        } else if (insn instanceof org.objectweb.asm.tree.FieldInsnNode) {
+                            resolve(namedFields, extraFields, insn.owner, insn.name + ':' + insn.desc)
+                        }
+                    }
+                }
+                node.fields.each { fn ->
+                    resolve(namedFields, extraFields, node.name, fn.name + ':' + fn.desc)
+                }
+            }
+        }
+
+        def toObfType = { String desc ->
+            def m = (desc =~ /L([^;]+);/)
+            def sb = new StringBuilder()
+            int last = 0
+            while (m.find()) {
+                sb.append(desc, last, m.start())
+                def cls = m.group(1)
+                def obf = byName[cls]?.obf ?: cls
+                sb.append('L').append(obf).append(';')
+                last = m.end()
+            }
+            sb.append(desc.substring(last))
+            sb.toString()
+        }
+        def renderer = byName['net/minecraft/client/renderer/entity/ItemRenderer']
+        def widened = renderer == null ? null : renderer.fields.find { it.name == 'itemModelShaper' }
+        def widenJson = ''
+        if (renderer != null && widened != null) {
+            widenJson = ',"widen":{"fields":[{"owner":"' + renderer.obf + '","sig":"' +
+                    widened.obf + ':' + toObfType(widened.desc) + '"}]}'
+        }
+
+        json.withWriter('UTF-8') { w ->
+            w.write('{"default":{"classes":[')
+            boolean first = true
+            parsed.each { c ->
+                def methods = new LinkedHashMap<String, String>()
+                c.methods.each { m -> methods[m.name + m.desc] = m.obf }
+                extraMethods[c.named].each { k, v -> methods.putIfAbsent(k, v) }
+                def fields = new LinkedHashMap<String, String>()
+                c.fields.each { f -> fields[f.name + ':' + f.desc] = f.obf }
+                extraFields[c.named].each { k, v -> fields.putIfAbsent(k, v) }
+                if (!first) w.write(',')
+                first = false
+                w.write('{"from":"' + c.named + '","to":"' + c.obf + '"')
+                if (!methods.isEmpty()) {
+                    w.write(',"methods":{')
+                    w.write(methods.collect { k, v -> '"' + k + '":"' + v + '()V"' }.join(','))
+                    w.write('}')
+                }
+                if (!fields.isEmpty()) {
+                    w.write(',"fields":{')
+                    w.write(fields.collect { k, v -> '"' + k + '":"' + v + ':' + k.substring(k.indexOf(':') + 1) + '"' }.join(','))
+                    w.write('}')
+                }
+                w.write('}')
+            }
+            // Identity entries for our own classes: inherited calls compiled with
+            // our class as the owner (this.addSlot(...)) need the member mapping
+            // under that same owner for the remapper to find it.
+            def modOwners = new LinkedHashSet<String>()
+            modOwners.addAll(extraMethods.keySet())
+            modOwners.addAll(extraFields.keySet())
+            modOwners.removeAll(byName.keySet())
+            modOwners.each { owner ->
+                def methods = extraMethods[owner]
+                def fields = extraFields[owner]
+                if (methods.isEmpty() && fields.isEmpty()) return
+                w.write(',{"from":"' + owner + '","to":"' + owner + '"')
+                if (!methods.isEmpty()) {
+                    w.write(',"methods":{')
+                    w.write(methods.collect { k, v -> '"' + k + '":"' + v + '()V"' }.join(','))
+                    w.write('}')
+                }
+                if (!fields.isEmpty()) {
+                    w.write(',"fields":{')
+                    w.write(fields.collect { k, v -> '"' + k + '":"' + v + ':' + k.substring(k.indexOf(':') + 1) + '"' }.join(','))
+                    w.write('}')
+                }
+                w.write('}')
+            }
+            w.write(']' + widenJson + '}}')
+        }
+        logger.lifecycle("Wrote ${json.length()} bytes of NilLoader mappings for ${mcVersion}")
+    }
+}
+
+def remapNamedJar = tasks.register('remapNamedJar') {
+    dependsOn resolveGame, downloadMappings
+    inputs.file(rawClientJar)
+    inputs.file(mappingsTxt)
+    outputs.file(namedJar)
+    doLast {
+        if (!obfuscated) return
+        def parsed = parseMojmap(mappingsTxt.get().asFile)
+        def classes = [:]
+        def namedToObf = [:]
+        parsed.each { c ->
+            classes[c.obf] = c.named
+            namedToObf[c.named] = c.obf
+        }
+        def toObfDesc = { String d ->
+            def m = (d =~ /L([^;]+);/)
+            def sb = new StringBuilder()
+            int last = 0
+            while (m.find()) {
+                sb.append(d, last, m.start())
+                def cls = m.group(1)
+                sb.append('L').append(namedToObf.getOrDefault(cls, cls)).append(';')
+                last = m.end()
+            }
+            sb.append(d.substring(last))
+            sb.toString()
+        }
+        // Obf names collide inside a class (Component has several "b"), so the
+        // primary key is owner + name + *obf* descriptor. Name-only keys are
+        // only used when every mapping for that name agrees.
+        def methodsByDesc = [:]
+        def fieldsByDesc = [:]
+        def methodNames = [:]
+        parsed.each { c ->
+            c.methods.each { m ->
+                methodsByDesc[c.obf + '.' + m.obf + toObfDesc(m.desc)] = m.name
+                def k = c.obf + '.' + m.obf
+                methodNames.computeIfAbsent(k) { new HashSet<String>() }.add(m.name)
+            }
+            c.fields.each { f ->
+                fieldsByDesc[c.obf + '.' + f.obf + ':' + toObfDesc(f.desc)] = f.name
+            }
+        }
+        def methodsByName = [:]
+        methodNames.each { k, v -> if (v.size() == 1) methodsByName[k] = v.iterator().next() }
+        int[] stats = new int[3]
+        def remapper = new org.objectweb.asm.commons.Remapper() {
+            @Override
+            String map(String internalName) {
+                stats[0]++
+                return classes.getOrDefault(internalName, internalName)
+            }
+
+            @Override
+            String mapMethodName(String owner, String name, String descriptor) {
+                stats[1]++
+                if (owner == 'wp' && name == 'b') {
+                }
+                def byDesc = methodsByDesc.get(owner + '.' + name + descriptor)
+                if (byDesc != null) return byDesc
+                return methodsByName.getOrDefault(owner + '.' + name, name)
+            }
+
+            @Override
+            String mapFieldName(String owner, String name, String descriptor) {
+                stats[2]++
+                def byDesc = fieldsByDesc.get(owner + '.' + name + ':' + descriptor)
+                if (byDesc != null) return byDesc
+                return name
+            }
+        }
+        File source = rawClientJar.get().asFile
+        File dest = namedJar.get().asFile
+        dest.parentFile.mkdirs()
+        new ZipFile(source).withCloseable { zin ->
+            new java.util.zip.ZipOutputStream(new FileOutputStream(dest)).withCloseable { zout ->
+                zin.entries().each { entry ->
+                    byte[] bytes
+                    String entryName = entry.name
+                    if (entry.directory) {
+                        bytes = new byte[0]
+                    } else {
+                        bytes = zin.getInputStream(entry).bytes
+                        if (entry.name.endsWith('.class')) {
+                            String internal = entry.name.substring(0, entry.name.length() - 6)
+                            entryName = remapper.map(internal) + '.class'
+                            def reader = new ClassReader(bytes)
+                            def writer = new ClassWriter(0)
+                            reader.accept(new org.objectweb.asm.commons.ClassRemapper(writer, remapper), 0)
+                            bytes = writer.toByteArray()
+                        }
+                    }
+                    zout.putNextEntry(new java.util.zip.ZipEntry(entryName))
+                    zout.write(bytes)
+                    zout.closeEntry()
+                }
+            }
+        }
+    }
+}
+
+def compileBaseJar = obfuscated ? namedJar : rawClientJar
+def compileBaseTask = obfuscated ? remapNamedJar : resolveGame
+
+def parseMojmap(File file) {
+    def out = []
+    Map current = null
+    file.eachLine('UTF-8') { String line ->
+        if (line.startsWith('    ')) {
+            if (current == null) return
+            def arrow = line.lastIndexOf(' -> ')
+            if (arrow < 0) return
+            String left = line.substring(4, arrow).trim()
+            left = left.replaceFirst('^\\d+:\\d+:', '')
+            left = left.replaceFirst('^(?:public |protected |private |static |final |abstract |native |synchronized |strictfp |default )+', '')
+            if (left.startsWith('<')) return
+            String obf = line.substring(arrow + 4).trim()
+            if (left.contains('(')) {
+                int p = left.indexOf('(')
+                String head = left.substring(0, p).trim()
+                String args = left.substring(p + 1, left.length() - 1).trim()
+                int sp = head.lastIndexOf(' ')
+                if (sp < 0) return
+                String ret = head.substring(0, sp).trim()
+                String name = head.substring(sp + 1)
+                String desc = '(' + (args ? args.split(',').collect { typeDesc(it.trim()) }.join('') : '') + ')' + typeDesc(ret)
+                current.methods << [name: name, desc: desc, obf: obf]
+            } else {
+                int sp = left.lastIndexOf(' ')
+                if (sp < 0) return
+                current.fields << [name: left.substring(sp + 1), desc: typeDesc(left.substring(0, sp).trim()), obf: obf]
+            }
+            return
+        }
+        if (line.startsWith('#') || line.trim().isEmpty()) return
+        if (!line.contains(' -> ')) { current = null; return }
+        def arrow = line.lastIndexOf(' -> ')
+        String named = line.substring(0, arrow).trim()
+        String obf = line.substring(arrow + 4).trim()
+        if (obf.endsWith(':')) obf = obf.substring(0, obf.length() - 1)
+        current = [named: named.replace('.', '/'), obf: obf.replace('.', '/'), methods: [], fields: []]
+        out << current
+    }
+    out
+}
+
+def typeDesc(String t) {
+    t = t.trim()
+    if (t.endsWith('...')) t = t.substring(0, t.length() - 3) + '[]'
+    if (t.endsWith('[]')) return '[' + typeDesc(t.substring(0, t.length() - 2))
+    switch (t) {
+        case 'void': return 'V'
+        case 'boolean': return 'Z'
+        case 'byte': return 'B'
+        case 'char': return 'C'
+        case 'short': return 'S'
+        case 'int': return 'I'
+        case 'long': return 'J'
+        case 'float': return 'F'
+        case 'double': return 'D'
+        default: return 'L' + t.replace('.', '/') + ';'
+    }
+}
+
 // ---------------------------------------------------------------- widening --
 // javac checks access against the raw game jar, so the four former access
 // widener members are widened in a COPY of the client jar that only the
@@ -161,6 +525,9 @@ class WidenVisitor extends ClassVisitor {
                     ['target:Lnet/minecraft/world/inventory/Slot;'] as Set,
             'net/minecraft/client/gui/screens/inventory/AbstractContainerScreen':
                     ['skipNextRelease:Z'] as Set,
+            // 1.21.2-1.21.3's open-bundle model rendering reads this field.
+            'net/minecraft/client/renderer/entity/ItemRenderer':
+                    ['itemModelShaper:Lnet/minecraft/client/renderer/ItemModelShaper;'] as Set,
     ] as Map
     static final Set<String> CLASS_TARGETS = [
             'net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen$SlotWrapper',
@@ -172,7 +539,7 @@ class WidenVisitor extends ClassVisitor {
     static final Set<String> OUTER_CLASSES = [
             'net/minecraft/client/gui/screens/inventory/CreativeModeInventoryScreen',
     ] as Set
-    static final Set<String> REWRITE = (CLASS_TARGETS + OUTER_CLASSES) as Set
+    static final Set<String> REWRITE = (CLASS_TARGETS + FIELD_TARGETS.keySet() + OUTER_CLASSES) as Set
 
     String current
 
@@ -208,11 +575,11 @@ class WidenVisitor extends ClassVisitor {
 
 def widenedJar = gameDir.map { it.file('client-widened.jar') }
 def widenGameJar = tasks.register('widenGameJar') {
-    dependsOn resolveGame
-    inputs.file(rawClientJar)
+    dependsOn compileBaseTask
+    inputs.file(compileBaseJar)
     outputs.file(widenedJar)
     doLast {
-        File source = rawClientJar.get().asFile
+        File source = compileBaseJar.get().asFile
         File dest = widenedJar.get().asFile
         dest.parentFile.mkdirs()
         new ZipFile(source).withCloseable { zipIn ->
@@ -263,6 +630,9 @@ processResources {
 // the agent manifest entries NilGradle's `standalone true` would set.
 
 tasks.named('jar') {
+    dependsOn generateMappings
+    // NilLoader reads META-INF/nil/mappings.json; only the mod jar carries it.
+    from(mappingsJsonDir)
     manifest {
         attributes(
                 'Premain-Class': 'nilloader.NilAgent',

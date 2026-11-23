@@ -1,72 +1,70 @@
-# NilLoader target scope
+# NilLoader support
 
-Question: can the mod be ported to earlier Minecraft versions under NilLoader,
-and can those builds use the 1.7.0 (vanilla-sprite) window instead of the old
-`bundle.png` art?
+NilLoader now covers every era the mod supports: **1.21.2 → 26.3**, nine jars
+(six for 1.21.x, three for 26.x). The floor is Minecraft's: bundles only became
+a normal item in 1.21.2, so there is nothing below it to load.
 
-## Short answer
+## Why 26.x was easy and 1.21.x was not
 
-**The supported floor is 1.21.2, and that is a Minecraft decision, not a
-NilLoader one.**
+26.x ships **unobfuscated**. The Mini transformers name classes and methods
+directly and nothing else is needed.
 
-Bundles were added as an experimental item in 1.17 and stayed behind the bundle
-experimental datapack through 1.21.1. They became a normal, non-experimental
-item in **1.21.2** — the same release that added `BundleContents` selection and
-`ServerboundSelectBundleItemPacket`. Upstream's first release (1.0.0) targets
-1.21.2 for exactly this reason.
+1.21.x ships **obfuscated**, so a nilmod needs two extra things that have
+nothing to do with the mod itself:
 
-So there is no earlier version to port to: below 1.21.2 the item the mod exists
-to open is not part of the game. Pre-1.20.5 bundles were also plain NBT, with
-no components and no weight.
+1. **A named jar to compile against.** javac must see
+   `net.minecraft.world.item.ItemStack`, not `cwq`.
+2. **`META-INF/nil/mappings.json`.** NilLoader uses it to rewrite this mod's
+   own classes and Mini patch strings from the dev names into runtime names
+   while they load.
 
-NilLoader itself is not a constraint. It is a JVM agent with Mini transformers
-and has builds going back well before 1.21; what changes per target is the
-method descriptors being patched and the Java bytecode level of our jar.
+Both are generated in `nil.build.gradle` from Mojang's published client
+mappings; nothing is committed.
 
-## What was verified (javap against the 1.21.1 merged jar)
+## The flattening step
 
-Kept as evidence for why the experimental era is not a viable target even if
-someone force-enabled bundles with the datapack:
+NilLoader's remapper (Lorenz) resolves inherited members through a runtime
+inheritance provider, which only sees **obfuscated** classes. With a
+named→obf mapping set it therefore cannot follow `Player extends Entity` to
+find `isShiftKeyDown`. The build sidesteps that by flattening:
 
-| API | 1.21.1 |
-|---|---|
-| `BundleContents` (`weight`, `size`, `getItemUnsafe`, `items`) | yes |
-| `BundleContents.Mutable` (`tryInsert`, `removeOne`, `toImmutable`) | yes |
-| `Mutable.toggleSelectedItem` | **no** |
-| `ServerboundSelectBundleItemPacket` | **no** |
-| `BundleItem.overrideStackedOnOther` / `overrideOtherStackedOnMe` | yes |
-| removal target | `removeOne()` = last item only |
-| `recipe_book/overlay_recipe` nine-slice | yes |
-| `boss_bar/*` sprites | yes |
-| `container/slot_highlight_back/front` sprites | **no** (added 1.21.2) |
-| Java level | 21 |
+- every Minecraft member referenced by our compiled classes (call sites,
+  field accesses, **and declared overrides**) is resolved against the named
+  hierarchy *at build time*;
+- the mapping is then emitted a second time under the **call-site owner**
+  (`Player.isShiftKeyDown`, `BundleInventoryHandler.addSlot`, …).
 
-With the datapack, the renderer would port down with two shims (hover
-highlight drawn as fills, legacy boss-bar paths for 1.20.1-class targets), but
-the handler could not: without the selection packet, clicking a content slot
-can only ask vanilla to remove the last stack. A UI that lists N slots and
-removes an arbitrary one is not the mod.
+This is why the emitted file is ~10 MB: it carries explicit entries for the
+references the mod actually uses rather than relying on runtime inheritance.
 
-## Renderer decision (applies to the versions we do ship)
+Two related details:
 
-Use the 1.7.0 `UIDrawer` renderer everywhere — 1.21.2–1.21.4 already do. Do
-**not** resurrect `bundle.png`:
+- **Interfaces** are walked as well. `ItemStack.get(DataComponentType)` is
+  declared on `DataComponentHolder`, and that is how it gets mapped.
+- **Access widening** rides in the same file (`widen.fields`), e.g.
+  `ItemRenderer.itemModelShaper` for 1.21.2-1.21.3. No Fabric access widener
+  is involved.
 
-- its recessed strip is what caused the gray box next to the boss bar,
-- it ignores resource packs, which is the point of the 1.7.0 rewrite,
-- the smooth bar's sunken frame sprite is the last remaining reference; it can
-  become a fill-drawn frame so no era ships GUI art.
+## Deferred initialisation
 
-## Smooth bar
+Premain runs **before** NilLoader freezes its mapping set, and classes loaded
+before the freeze are never remapped. `BundleInventoryMod` therefore must not
+be touched from premain; `NilBootstrap.ensure()` initialises it from the first
+patched call site instead.
 
-The smooth fullness bar is an addition of this port, not upstream. It is only
-offered where it can be drawn faithfully with the era's assets (1.21.2+). There
-is no older NilLoader node, so there is no node on which it needs to be hidden.
+## Running one
 
-## Recommendation
+NilLoader instances are stock Minecraft plus the jar as a Java agent:
 
-- No pre-1.21.2 build. The item does not officially exist there.
-- Keep the current range: 1.21.2 → 26.3 across Fabric, Quilt, NeoForge, Forge
-  and NilLoader.
-- Cheap follow-up: replace the smooth bar's `bundle.png` frame with fills, so
-  the 1.21.2–1.21.4 jars contain no GUI textures of their own.
+```
+JvmArgs=-javaagent:BundleInventory-Nil-<version>+mc<label>.jar
+```
+
+The jar embeds NilLoader, so no loader has to be installed.
+
+## Notes
+
+- No config screen: NilLoader has no config API, so these builds read
+  `config/bundleinventory.properties` only.
+- The spawn of each build is `nil.build.gradle`; 26.x skips the mapping half
+  entirely.

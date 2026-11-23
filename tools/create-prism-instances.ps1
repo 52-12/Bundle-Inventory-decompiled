@@ -55,6 +55,12 @@ $groups = @(
     @{ node = '26.3-forge';             mc = '26.3'; loader = 'net.minecraftforge'; lv = '66.1.9' },
 
     # NilLoader: stock Minecraft + the standalone jar as a java agent.
+    @{ node = '1.21.2-1.21.3-nil';      mc = '1.21.2';  loader = $null; lv = $null; nil = $true },
+    @{ node = '1.21.4-nil';             mc = '1.21.4';  loader = $null; lv = $null; nil = $true },
+    @{ node = '1.21.5-nil';             mc = '1.21.5';  loader = $null; lv = $null; nil = $true },
+    @{ node = '1.21.6-1.21.8-nil';      mc = '1.21.6';  loader = $null; lv = $null; nil = $true },
+    @{ node = '1.21.9-1.21.10-nil';     mc = '1.21.9';  loader = $null; lv = $null; nil = $true },
+    @{ node = '1.21.11-nil';            mc = '1.21.11'; loader = $null; lv = $null; nil = $true },
     @{ node = '26.1-26.1.2-nil';        mc = '26.1'; loader = $null; lv = $null; nil = $true },
     @{ node = '26.2-nil';               mc = '26.2'; loader = $null; lv = $null; nil = $true },
     @{ node = '26.3-nil';               mc = '26.3'; loader = $null; lv = $null; nil = $true },
