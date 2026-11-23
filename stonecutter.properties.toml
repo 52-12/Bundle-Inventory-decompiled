@@ -344,8 +344,8 @@ mod.version = "1.7.3"
 mod.mc_label = "26.1-26.1.2"
 mod.mc_compat = "[26.1,26.2)"
 java.release = "25"
-deps.forge = "62.0.9"
-deps.forge_spec = "62"
+deps.forge = "64.1.5"
+deps.forge_spec = "64"
 deps.eventbus_validator = "7.0.1"
 
 ["26.2-forge"]

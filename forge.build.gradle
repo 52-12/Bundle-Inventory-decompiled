@@ -180,6 +180,16 @@ sourceSets {
     }
 }
 
+// Forge 26.x still ships upstream Mixin 0.8.7, which has no JAVA_25
+// compatibility level. The node compiles at 21 and the packaged config says so.
+if (is26x) {
+    tasks.named('processResources') {
+        filesMatching('bundleinventory.client.mixins.json') {
+            filter { String line -> line.replace('"JAVA_25"', '"JAVA_21"') }
+        }
+    }
+}
+
 minecraft {
     // Dev-time AT application is replaced by the compile-classpath widening
     // below; the jar still carries META-INF/accesstransformer.cfg for runtime.
