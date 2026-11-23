@@ -23,8 +23,11 @@ honestly run a single jar on:
 | 26.3 | 1.7.3 | — |
 
 **NeoForge (9 jars)** — the same Minecraft walls apply; NeoForge has no
-1.21.2 line (two abandoned betas only) and no Forge releases exist for
-1.21.2+ at all. Quilt runs the Fabric jars natively.
+1.21.2 line (two abandoned betas only). Quilt runs the Fabric jars natively
+(the mod uses no Fabric API, and its `fabricloader >=0.16.x` floor is well
+under Quilt's reported 0.19.5), so no separate Quilt build exists — verify
+with one playtest on Quilt. Forge skipped 1.21.2 as well; its builds for
+1.21.3+ are being added.
 
 Each jar reports honest provenance, e.g. `BundleInventory-Fabric-1.7.2+mc1.21.6-1.21.8.jar`
 is a recompile of official build **1.7.2** for **Minecraft 1.21.6–1.21.8**,
