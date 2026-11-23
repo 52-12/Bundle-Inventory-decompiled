@@ -163,19 +163,36 @@ function Write-Options([string]$InstanceDir) {
     # Keep rendering while unfocused so the window can be inspected.
     $options['pauseOnLostFocus'] = 'false'
     if (-not $options.Contains('renderDistance')) { $options['renderDistance'] = '8' }
-    # Playtest defaults: readable GUI and Quake Pro FOV.
+    # Playtest defaults: readable GUI, Quake Pro FOV, no music.
     $options['guiScale'] = '2'
     $options['fov'] = '110'
+    $options['music'] = '0.0'
     Write-TextFile $path (($options.Keys | ForEach-Object { "$($_):$($options[$_])" }) -join "`n")
 }
 
 function Set-LaunchWorld([string]$InstanceDir) {
     $cfg = Join-Path $InstanceDir 'instance.cfg'
-    $lines = Get-Content $cfg | Where-Object { $_ -notmatch '^(JoinWorldOnLaunch|JoinServerOnLaunch|JoinServerOnLaunchAddress)=' }
-    while ($lines.Count -gt 0 -and $lines[-1] -eq '') { $lines = $lines[0..($lines.Count - 2)] }
-    $lines += 'JoinServerOnLaunch=true'
-    $lines += "JoinWorldOnLaunch=$WorldName"
-    Write-TextFile $cfg (($lines -join "`n") + "`n")
+    # Settings must live in [General]; appending at the end put them under
+    # [UI] (which Prism adds after the first launch) and Prism ignored them.
+    $filtered = New-Object System.Collections.Generic.List[string]
+    foreach ($line in (Get-Content $cfg)) {
+        if ($line -match '^(JoinWorldOnLaunch|JoinServerOnLaunch|JoinServerOnLaunchAddress|WrapperCommand|OverrideCommands)=') { continue }
+        $filtered.Add($line)
+    }
+    $idx = -1
+    for ($i = 0; $i -lt $filtered.Count; $i++) {
+        if ($filtered[$i] -match '^\[General\]$') { $idx = $i; break }
+    }
+    if ($idx -lt 0) {
+        $filtered.Insert(0, '[General]')
+        $idx = 0
+    }
+    $insert = @(
+        'JoinServerOnLaunch=true',
+        "JoinWorldOnLaunch=$WorldName"
+    )
+    $filtered.InsertRange($idx + 1, [string[]]$insert)
+    Write-TextFile $cfg (($filtered -join "`n") + "`n")
 }
 
 # ------------------------------------------------------------- helpers -----
