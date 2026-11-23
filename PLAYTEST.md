@@ -38,12 +38,12 @@ always forwarded to the game; the world is unaffected.
 | hotbar 2 | 32 stone + 8 apples + 4 diamonds (44/64) | yellow/orange bar |
 | hotbar 3 | 32 dirt + 32 stone (64/64) | full bar, two stacks; insert-fail |
 | hotbar 4 | 63 stone (63/64) | almost-full bar |
-| hotbar 5 | bundle containing one bundle (8 diamonds) | nesting (a non-empty inner bundle already weighs a full stack) |
+| hotbar 5 | bundle-in-bundle: bundle (8 diamonds) + 16 pearls + 16 apples | nesting |
 | hotbar 6 | 60 distinct stacks | scrolling (>48 visible slots) |
-| hotbar 7 | one diamond sword | unstackable weight = full bar |
+| hotbar 7 | sword, pickaxe, axe, shovel, bow, shield, elytra, trident | weight-1 items |
 | hotbar 8 | 1 apple | minimum fill |
 | hotbar 9 | 64 dirt | loose stack for cursor-insert |
-| inventory | 64 cobblestone, 16 pearls, 64 torches, 16 bread, spare bundle, **shulker box**, loose sword/pickaxe/bow | inserts, unstackable insert, rejection test |
+| inventory | 64 cobblestone, 16 pearls, 64 torches, 16 bread, spare bundle, **shulker box**, diamond sword | inserts, rejection test |
 
 ## Priority instances
 
@@ -75,8 +75,7 @@ Repeat for each instance in the priority table.
 5. **Fullness bar** — compare hotbar 1/2/3/4. Colour goes green → yellow →
    red. Inserting into hotbar 3 (full) plays the insert-fail sound.
 6. **Bundle in bundle** — put the spare empty bundle into another bundle, then
-   take it out. Hotbar 5 already contains a nested bundle. A non-empty inner
-   bundle weighs a full stack, so the outer bundle becomes full.
+   take it out. Hotbar 5 already contains a nested bundle.
 7. **Open indicator** — open a bundle from the inventory grid; the opened
    bundle should render differently/highlighted.
 8. **Creative shift-right-click** — in the creative inventory, shift-right-click
