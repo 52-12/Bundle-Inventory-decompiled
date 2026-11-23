@@ -175,6 +175,13 @@ Kept deliberately minimal, and all mechanical:
   declare the mod client-only (NeoForge `dist=CLIENT`; Forge
   `clientSideOnly=true`), and their jars carry the `pack.mcmeta` those loaders
   require (copied from each line's official MDK).
+- **Forge 26.x caveats.** Forge 62.0.9 (the 26.1 line) crashes in its own
+  `FieldToMethodTransformer` (`Field fluid is not private`) even with no mods
+  installed, so the 26.1-26.1.2 node and its instance target 26.1.2 with Forge
+  64.1.5. Forge 26.x also ships upstream Mixin 0.8.7, which has no `JAVA_25`
+  level, so those jars package the mixin config as `JAVA_21` while the code
+  still targets Java 25 (ForgeGradle declares the artifacts JVM-25-only and
+  refuses a 21 target). Verified joining on 26.1.2/64.1.5, 26.2 and 26.3.
 - **NilLoader build.** The three SpongePowered mixins become Mini transformers
   that call the same `Hooks` methods (NilLoader does not support Mixin). Six
   jars cover 1.21.2-1.21.11 and three cover 26.x; the jar embeds NilLoader so
