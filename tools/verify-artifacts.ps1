@@ -46,4 +46,4 @@ if ($missing.Count -gt 0) {
     Write-Host ("MISSING: " + ($missing -join ', '))
     exit 1
 }
-Write-Host 'all 30 groups built'
+Write-Host 'all 36 groups built'
