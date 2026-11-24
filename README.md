@@ -9,7 +9,11 @@ access widener), a copy of its `fabric.mod.json`, and a note with the exact
 file, hash and date.
 
 `intermediary/` keeps the names the published jars contain; `yarn/` is the
-Yarn-mapped copy (mappings for the lowest game version the upload targets). The port's adapted, Mojang-named
+Yarn-mapped copy (mappings for the lowest game version the upload targets).
+
+A few members that do not exist in the target version's Yarn build remain
+intermediary (the uploads occasionally reference members newer than their declared
+game version). The port's adapted, Mojang-named
 sources live on the [main branch](https://github.com/52-12/Bundle-Inventory-decompiled/tree/main)
 under `src/versions/`; the release jars are on
 [releases](https://github.com/52-12/Bundle-Inventory-decompiled/releases).
