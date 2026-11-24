@@ -1,0 +1,5 @@
+accessWidener	v2	named
+accessible	class	net/minecraft/client/gui/screen/ingame/CreativeInventoryScreen$CreativeSlot
+accessible	field	net/minecraft/client/gui/screen/ingame/CreativeInventoryScreen$CreativeSlot	slot	Lnet/minecraft/screen/slot/Slot;
+accessible	class	net/minecraft/screen/slot/ArmorSlot
+accessible	field	net/minecraft/client/gui/screen/ingame/HandledScreen	cancelNextRelease	Z

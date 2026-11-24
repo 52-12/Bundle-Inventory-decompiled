@@ -3,11 +3,13 @@
 One folder per **Modrinth upload** of
 [Bundle Inventory](https://modrinth.com/mod/bundle-inventory/versions), named
 `<version>-<game versions>`. Each folder contains the direct Vineflower
-decompilation of that published jar (`intermediary/`), a copy of its
-`fabric.mod.json`, and a note with the exact file, hash and date.
+decompilation of that published jar (`intermediary/`), the same sources
+remapped to Fabric **Yarn** names (`yarn/`, including mixin descriptors and the
+access widener), a copy of its `fabric.mod.json`, and a note with the exact
+file, hash and date.
 
-Minecraft names in these sources are Fabric **intermediary** names, because
-that is what the published jars contain. The port's adapted, Mojang-named
+`intermediary/` keeps the names the published jars contain; `yarn/` is the
+Yarn-mapped copy (mappings for the lowest game version the upload targets). The port's adapted, Mojang-named
 sources live on the [main branch](https://github.com/52-12/Bundle-Inventory-decompiled/tree/main)
 under `src/versions/`; the release jars are on
 [releases](https://github.com/52-12/Bundle-Inventory-decompiled/releases).

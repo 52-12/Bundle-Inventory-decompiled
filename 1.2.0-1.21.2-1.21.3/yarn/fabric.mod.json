@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "bundleinventory",
+  "version": "1.2.0",
+  "name": "Bundle Inventory",
+  "description": "Adds interactive inventory to Bundle item",
+  "authors": [
+    "Socolio"
+  ],
+  "contact": {},
+  "license": "All Rights Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.socol.bundleinventory.BundleInventoryMod"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "bundleinventory.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": "\u003e\u003d0.16.7",
+    "minecraft": "\u003e\u003d1.21.2",
+    "java": "\u003e\u003d21"
+  },
+  "jars": [
+    {
+      "file": "META-INF/jars/fabric-resource-loader-v0-3.0.5+c47b9d4373.jar"
+    }
+  ]
+}

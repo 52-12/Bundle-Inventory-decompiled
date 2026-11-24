@@ -13,8 +13,9 @@ Modrinth.
 
 `intermediary/` is the direct Vineflower decompilation of the published jar,
 so Minecraft classes/methods keep their Fabric **intermediary** names
-(`class_1234`, `method_1234`). `fabric.mod.json` is copied from the jar for
-provenance.
+(`class_1234`, `method_1234`). `yarn/` is the same source remapped to
+**Yarn** names using `yarn-1.21.4+build.8` mappings (mixin descriptors and the access
+widener included). `fabric.mod.json` is copied from the jar for provenance.
 
 The port's adapted, Mojang-named sources for the versions it recompiles live on
 the [main branch](https://github.com/52-12/Bundle-Inventory-decompiled/tree/main)
