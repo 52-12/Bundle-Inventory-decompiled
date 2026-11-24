@@ -73,19 +73,27 @@ def forgeGroups = [
         '26.3-forge'         : '26.3',
 ]
 
-// NilLoader (Java-agent loader). Only the unobfuscated 26.x line is viable:
-// no mapping layer, no resource mounting (the 26.x-era code draws vanilla
-// sprites only), and the three mixins are rewritten as Mini transformers.
+// NilLoader (Java-agent loader). It has no Mixin and, on obfuscated versions,
+// no version-independent mapping layer: the generated mappings and the Mini
+// patch targets are only valid for the Minecraft version they were built from.
+// Obf names drift even between point releases (about 72% of classes changed
+// 1.21.2 -> 1.21.3, 28% 1.21.6 -> 1.21.8), and NilLoader swallows a failed
+// patch, so a mismatched jar is silently inert. Each obfuscated jar is
+// therefore pinned to one Minecraft version, or to a pair whose mappings are
+// byte-identical (1.21.6-1.21.7 and 1.21.9-1.21.10). 26.x ships Mojang names
+// and needs no mappings, so its ranges are unaffected.
 def nilGroups = [
-        '1.21.2-1.21.3-nil': '1.21.2',
-        '1.21.4-nil'       : '1.21.4',
-        '1.21.5-nil'       : '1.21.5',
-        '1.21.6-1.21.8-nil': '1.21.6',
-        '1.21.9-1.21.10-nil': '1.21.9',
-        '1.21.11-nil'      : '1.21.11',
-        '26.1-26.1.2-nil': '26.1',
-        '26.2-nil'       : '26.2',
-        '26.3-nil'       : '26.3',
+        '1.21.2-nil'         : '1.21.2',
+        '1.21.3-nil'         : '1.21.3',
+        '1.21.4-nil'         : '1.21.4',
+        '1.21.5-nil'         : '1.21.5',
+        '1.21.6-1.21.7-nil'  : '1.21.6',
+        '1.21.8-nil'         : '1.21.8',
+        '1.21.9-1.21.10-nil' : '1.21.9',
+        '1.21.11-nil'        : '1.21.11',
+        '26.1-26.1.2-nil'    : '26.1',
+        '26.2-nil'           : '26.2',
+        '26.3-nil'           : '26.3',
 ]
 
 stonecutter {

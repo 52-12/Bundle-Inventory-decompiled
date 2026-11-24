@@ -1,7 +1,7 @@
 # NilLoader support
 
-NilLoader now covers every era the mod supports: **1.21.2 → 26.3**, nine jars
-(six for 1.21.x, three for 26.x). The floor is Minecraft's: bundles only became
+NilLoader now covers every era the mod supports: **1.21.2 → 26.3**, eleven
+jars (eight for 1.21.x, three for 26.x). The floor is Minecraft's: bundles only became
 a normal item in 1.21.2, so there is nothing below it to load.
 
 ## Why 26.x was easy and 1.21.x was not
@@ -20,6 +20,17 @@ nothing to do with the mod itself:
 
 Both are generated in `nil.build.gradle` from Mojang's published client
 mappings; nothing is committed.
+
+## Why 1.21.x jars are pinned per version
+
+NilLoader cannot gate on the Minecraft version (its metadata has no such field)
+and it catches and logs a failed Mini patch instead of failing the launch.
+Obfuscated class names, however, change even between point releases: about 72%
+of classes were renamed from 1.21.2 to 1.21.3 and 28% from 1.21.6 to 1.21.8,
+including this mod's three patch targets. A jar whose mappings were generated
+from a different version therefore remaps nothing, and the mod is silently
+inert. Each obfuscated jar is pinned to exactly one version, or to a pair whose
+mappings are byte-identical (1.21.6-1.21.7 and 1.21.9-1.21.10).
 
 ## The flattening step
 

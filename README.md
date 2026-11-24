@@ -4,7 +4,7 @@ The decompiled, buildable source of **Bundle Inventory** (Fabric mod by
 Socolio, All Rights Reserved) for **every Minecraft version that has the
 scrollable bundle item — 1.21.2 (Bundles of Bravery) through 26.3 — on both
 Fabric and NeoForge**, rebuilt from the author's own published builds — plus
-Forge from 1.21.3 and a **NilLoader build for 26.x** that runs the mod on
+Forge from 1.21.3 and a **NilLoader build** that runs the mod on
 completely vanilla Minecraft with no mod loader at all.
 
 One jar per **release group** per loader — the biggest Minecraft span each
@@ -41,19 +41,22 @@ Quilt Loader supports exactly like Fabric Loader, and the
 separate Quilt build exists — verify with one playtest on Quilt. No other
 loader has builds for any Minecraft version that has the bundle item.
 
-**NilLoader (3 jars, 26.x only)** — the loader-less build: a standalone Java
-agent that runs the mod on stock Minecraft. Only 26.x is viable because the
-game is unobfuscated there (no mapping layer — and NilGradle's shaded ASM
-cannot read the 26.x class format anyway) and the 26.x-era code draws vanilla
-sprites only (a nilmod cannot mount a resource pack; the 1.21.2–1.21.4 eras
-draw a mod-provided texture, so they are not portable). NilGradle itself
-cannot run on Gradle 9 (`ConfigurationContainer.add` was removed), so the nil
-build is self-managed: it resolves the Mojang client jar + library artifacts
-from piston-meta, widens a copy of the client jar for javac, and packages
-NilLoader embedded (`Premain-Class`/`Agent-Class` + `nilmod.css`). The three
-mixins are rewritten as Mini transformers that delegate into the same
-unchanged `Hooks` class, and the access widener is replaced by a runtime
-access-flag transformer plus the build-time widened compile jar.
+**NilLoader (11 jars)** - the loader-less build: a standalone Java agent that
+runs the mod on stock Minecraft. 26.x is unobfuscated, so those three jars are
+ordinary builds; the eight 1.21.x jars carry a mapping layer. NilLoader has no
+version gating of its own and swallows a failed Mini patch, and obfuscated
+class names drift even between point releases (about 72% of classes changed
+1.21.2 -> 1.21.3 and 28% 1.21.6 -> 1.21.8), so a jar built from the wrong
+version's mappings is silently inert. Each obfuscated jar is therefore pinned
+to one Minecraft version, or to a pair whose mappings are byte-identical
+(1.21.6-1.21.7 and 1.21.9-1.21.10). NilGradle itself cannot run on Gradle 9
+(`ConfigurationContainer.add` was removed), so the nil build is self-managed:
+it resolves the Mojang client jar + library artifacts from piston-meta, widens
+a copy of the client jar for javac, and packages NilLoader embedded
+(`Premain-Class`/`Agent-Class` + `nilmod.css`). The three mixins are rewritten
+as Mini transformers that delegate into the same unchanged `Hooks` class, and
+the access widener is replaced by a runtime access-flag transformer plus the
+build-time widened compile jar.
 
 Each jar reports honest provenance, e.g. `BundleInventory-Fabric-1.7.2+mc1.21.6-1.21.8.jar`
 is a recompile of official build **1.7.2** for **Minecraft 1.21.6–1.21.8**,
@@ -203,8 +206,9 @@ Kept deliberately minimal, and all mechanical:
   26.2: insert a stack, then take it back out. On a remote Forge 26.1/26.2
   server without this mod the upstream bug still applies.
 - **NilLoader build.** The three SpongePowered mixins become Mini transformers
-  that call the same `Hooks` methods (NilLoader does not support Mixin). Six
-  jars cover 1.21.2-1.21.11 and three cover 26.x; the jar embeds NilLoader so
+  that call the same `Hooks` methods (NilLoader does not support Mixin).
+  Eleven jars: eight cover 1.21.2-1.21.11 (pinned per version where the
+  obfuscated names drift) and three cover 26.x; the jar embeds NilLoader so
   it runs directly as `-javaagent:` with no loader installed. Two modes:
   - **26.x** is unobfuscated, so no mapping layer is involved.
   - **1.21.x is obfuscated.** Those nodes download Mojang's client mappings
