@@ -1,27 +1,14 @@
-name: build
+name: build-and-release
 
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'gradle.properties'
-      - 'stonecutter.properties.toml'
-      - 'settings.gradle'
-      - 'stonecutter.gradle'
-      - 'fabric.build.gradle'
-      - 'neoforge.build.gradle'
-      - 'forge.build.gradle'
-      - 'nil.build.gradle'
-      - 'gradle/**'
-      - 'gradlew'
-      - 'gradlew.bat'
-      - '.github/workflows/build.yml'
+    tags: [ 'v*' ]
   pull_request:
   workflow_dispatch:
     inputs:
-      node:
-        description: 'Single group to build (e.g. 26.3-fabric, 1.21.4-neoforge or 26.2-forge). Leave empty for all groups.'
+      tag:
+        description: 'Publish a release for this tag (e.g. v1.7.3). Leave empty to only build.'
         required: false
         default: ''
         type: string
@@ -38,15 +25,39 @@ env:
 
 jobs:
   build:
-    name: Every version, both loaders
+    name: Build ${{ matrix.loader }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - loader: fabric
+            nodes: >-
+              1.21.2-1.21.3-fabric 1.21.4-fabric 1.21.5-fabric
+              1.21.6-1.21.8-fabric 1.21.9-1.21.10-fabric 1.21.11-fabric
+              26.1-26.1.2-fabric 26.2-fabric 26.3-fabric
+          - loader: neoforge
+            nodes: >-
+              1.21.3-neoforge 1.21.4-neoforge 1.21.5-neoforge
+              1.21.6-1.21.8-neoforge 1.21.9-1.21.10-neoforge 1.21.11-neoforge
+              26.1-26.1.2-neoforge 26.2-neoforge 26.3-neoforge
+          - loader: forge
+            nodes: >-
+              1.21.3-forge 1.21.4-forge 1.21.5-forge
+              1.21.6-1.21.8-forge 1.21.9-1.21.10-forge 1.21.11-forge
+              26.1-26.1.2-forge 26.2-forge 26.3-forge
+          - loader: nil
+            nodes: >-
+              1.21.2-nil 1.21.3-nil 1.21.4-nil 1.21.5-nil
+              1.21.6-1.21.7-nil 1.21.8-nil 1.21.9-1.21.10-nil 1.21.11-nil
+              26.1-26.1.2-nil 26.2-nil 26.3-nil
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      # Java 25 runs Gradle (Stonecutter 0.10 requires it); Java 21 is only the
-      # compile toolchain for the 1.21.x nodes. The last entry becomes JAVA_HOME.
+      # Java 25 runs Gradle (Stonecutter 0.10 requires it); Java 21 is the
+      # compile toolchain for the 1.21.x nodes. The last entry is JAVA_HOME.
       - name: Set up JDKs 21 and 25
         uses: actions/setup-java@v6
         with:
@@ -55,15 +66,6 @@ jobs:
             21
             25
 
-      - name: Show Java versions
-        run: |
-          java -version
-          echo "JAVA_HOME=$JAVA_HOME"
-          echo "JAVA_HOME_21_X64=$JAVA_HOME_21_X64"
-          echo "JAVA_HOME_25_X64=$JAVA_HOME_25_X64"
-
-      # setup-gradle caches the Gradle User Home, which is also where the
-      # NeoForge nodes cache their NeoForm (decompile) artifacts.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
@@ -73,46 +75,70 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
-      # The first build of a NeoForge node decompiles Minecraft for that
-      # version (NeoForm); building projects sequentially keeps that memory
-      # usage bounded. Cached afterwards.
-      - name: Build (single node)
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.node != ''
-        run: >
-          ./gradlew ":${{ github.event.inputs.node }}:build"
-          --no-daemon --no-parallel --stacktrace --console=plain
-          -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64
-
-      - name: Build (all nodes)
-        if: github.event_name != 'workflow_dispatch' || github.event.inputs.node == ''
-        run: >
-          ./gradlew build
-          --no-daemon --no-parallel --stacktrace --console=plain
-          -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64
-
-      - name: Verify one jar per node
-        if: github.event_name != 'workflow_dispatch' || github.event.inputs.node == ''
+      - name: Build ${{ matrix.loader }} nodes (sequential, single worker)
         shell: bash
         run: |
-          expected=$(find versions -mindepth 1 -maxdepth 1 -type d | wc -l)
-          actual=$(find versions -path '*/build/libs/*.jar' \
-            ! -name '*-sources.jar' ! -name '*-dev.jar' | wc -l)
-          echo "nodes=$expected jars=$actual"
-          find versions -path '*/build/libs/*.jar' | sort
-          test "$expected" -gt 0
-          test "$actual" -ge "$expected" || {
-            echo "::error::Expected at least one jar per node"
+          set -euo pipefail
+          args=()
+          for node in ${{ matrix.nodes }}; do args+=(":$node:build"); done
+          ./gradlew "${args[@]}" \
+            --no-daemon --no-parallel --max-workers=1 \
+            --stacktrace --console=plain \
+            -Dorg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64
+
+      - name: Verify one jar per node
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=0
+          for node in ${{ matrix.nodes }}; do expected=$((expected + 1)); done
+          mapfile -t jars < <(find versions -path '*/build/libs/*.jar' \
+            ! -name '*-sources.jar' ! -name '*-dev.jar' | sort)
+          echo "expected=$expected found=${#jars[@]}"
+          printf '%s\n' "${jars[@]}"
+          test "${#jars[@]}" -ge "$expected" || {
+            echo "::error::Expected one jar per node for ${{ matrix.loader }}"
             exit 1
           }
 
-      - name: Upload all version jars
-        if: github.event_name != 'workflow_dispatch' || github.event.inputs.node == ''
+      - name: Upload ${{ matrix.loader }} jars
         uses: actions/upload-artifact@v7
         with:
-          name: bundleinventory-jars
+          name: jars-${{ matrix.loader }}
           path: |
             versions/*/build/libs/*.jar
             !versions/*/build/libs/*-sources.jar
             !versions/*/build/libs/*-dev.jar
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
+
+  release:
+    name: Publish release
+    needs: build
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository (for the changelog)
+        uses: actions/checkout@v7
+
+      - name: Collect jars
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List assets
+        run: ls -la dist
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          name: Bundle Inventory ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          body_path: CHANGELOG.md
+          files: dist/*.jar
+          fail_on_unmatched_files: true
