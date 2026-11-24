@@ -1,41 +1,35 @@
-# Bundle Inventory - decompiled sources by Minecraft version
+# Bundle Inventory - decompiled sources per official upload
 
-One folder per Minecraft version covered by the author's official builds on
-[Modrinth](https://modrinth.com/mod/bundle-inventory/versions). Each folder
-holds the decompiled source of the official build that covers that version,
-adapted for the multi-version port, plus a per-version note.
+One folder per **Modrinth upload** of
+[Bundle Inventory](https://modrinth.com/mod/bundle-inventory/versions), named
+`<version>-<game versions>`. Each folder contains the direct Vineflower
+decompilation of that published jar (`intermediary/`), a copy of its
+`fabric.mod.json`, and a note with the exact file, hash and date.
 
-| Folder | Official build | Notes |
-|---|---|---|
-| 1.21.2 | 1.6.0 | the 1.6.0 upload covered 1.21.2 - 1.21.3 |
-| 1.21.3 | 1.6.0 | |
-| 1.21.4 | 1.6.1 | 1.6.0 and 1.6.1 were uploaded for 1.21.4; 1.6.1 is the latest |
-| 1.21.5 | 1.7.1 | 1.6.1, 1.7.0 and 1.7.1 were uploaded for 1.21.5; 1.7.1 is the latest |
-| 1.21.6 | 1.7.2 | |
-| 1.21.7 | 1.7.2 | 1.7.1 and 1.7.2 were uploaded for 1.21.7; 1.7.2 is the latest |
-| 1.21.8 | 1.7.2 | |
-| 1.21.9 | 1.7.3 | |
-| 1.21.10 | 1.7.3 | |
+Minecraft names in these sources are Fabric **intermediary** names, because
+that is what the published jars contain. The port's adapted, Mojang-named
+sources live on the [main branch](https://github.com/52-12/Bundle-Inventory-decompiled/tree/main)
+under `src/versions/`; the release jars are on
+[releases](https://github.com/52-12/Bundle-Inventory-decompiled/releases).
 
-Older Modrinth uploads (1.0.0 through 1.5.0) target 1.21.2 / 1.21.3; their
-source is represented by the latest build for those versions (1.6.0) in the
-folders above.
+| Upload | Game versions | Published | File |
+|---|---|---|---|
+| 1.7.3 | 1.21.9, 1.21.10 | 2025-10-04 | [BundleInventory-Fabric-1.7.3.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/q6hDwr5L/BundleInventory-Fabric-1.7.3.jar) |
+| 1.7.2 | 1.21.6, 1.21.7, 1.21.8 | 2025-07-06 | [BundleInventory-Fabric-1.7.2.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/kAzan8n3/BundleInventory-Fabric-1.7.2.jar) |
+| 1.7.1 | 1.21.7 | 2025-06-30 | [BundleInventory-Fabric-1.7.1.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/PcMvGuSB/BundleInventory-Fabric-1.7.1.jar) |
+| 1.7.1 | 1.21.5 | 2025-05-25 | [BundleInventory-Fabric-1.7.1.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/wk9ghrSW/BundleInventory-Fabric-1.7.1.jar) |
+| 1.7.0 | 1.21.5 | 2025-04-22 | [BundleInventory-Fabric-1.7.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/iKR7UtEZ/BundleInventory-Fabric-1.7.0.jar) |
+| 1.6.1 | 1.21.5 | 2025-04-05 | [BundleInventory-Fabric-1.6.1.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/JDrJa2cc/BundleInventory-Fabric-1.6.1.jar) |
+| 1.6.1 | 1.21.4 | 2024-12-27 | [BundleInventory-Fabric-1.6.1.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/xnB8BaC2/BundleInventory-Fabric-1.6.1.jar) |
+| 1.6.0 | 1.21.4 | 2024-12-05 | [BundleInventory-Fabric-1.6.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/gSn5Nr8L/BundleInventory-Fabric-1.6.0.jar) |
+| 1.6.0 | 1.21.2, 1.21.3 | 2024-11-17 | [BundleInventory-Fabric-1.6.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/zjpZRBji/BundleInventory-Fabric-1.6.0.jar) |
+| 1.5.0 | 1.21.2, 1.21.3 | 2024-11-03 | [BundleInventory-Fabric-1.5.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/cRcEfaXa/BundleInventory-Fabric-1.5.0.jar) |
+| 1.4.0 | 1.21.2, 1.21.3 | 2024-10-31 | [BundleInventory-Fabric-1.4.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/ZrBVhBPa/BundleInventory-Fabric-1.4.0.jar) |
+| 1.3.0 | 1.21.2, 1.21.3 | 2024-10-29 | [BundleInventory-Fabric-1.3.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/xfF76X7s/BundleInventory-Fabric-1.3.0.jar) |
+| 1.2.0 | 1.21.2, 1.21.3 | 2024-10-25 | [BundleInventory-Fabric-1.2.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/ircTiI6Z/BundleInventory-Fabric-1.2.0.jar) |
+| 1.1.0 | 1.21.2, 1.21.3 | 2024-10-23 | [BundleInventory-Fabric-1.1.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/QXZTUk32/BundleInventory-Fabric-1.1.0.jar) |
+| 1.0.0 | 1.21.2 | 2024-10-23 | [BundleInventory-Fabric-1.0.0.jar](https://cdn.modrinth.com/data/9uikk2Ea/versions/FnkUv8oK/BundleInventory-Fabric-1.0.0.jar) |
 
-**Not in this branch:** the port also ships jars for **1.21.11** and
-**26.1 - 26.3**, but those are not Modrinth uploads (as of this writing no
-official build covers them). They are adaptations of the 1.7.3 source, so they
-do not have a decompiled folder here. See the [main branch](../../tree/main)
-for the port's full support matrix.
-
-## Provenance
-
-The sources are reverse-engineered from the author's official Bundle
-Inventory jars (Socolio, All Rights Reserved) and adapted for the port:
-Mojang-named code, loader entry points, and the fixes listed in the
-[changelog](../../blob/main/CHANGELOG.md). Decompiled code is approximate;
-renaming and control-flow reconstruction are not guaranteed to match the
-author's original source.
-
-The buildable Stonecutter project (38 jars across Fabric, NeoForge, Forge and
-NilLoader) and the release jars live on the [main branch](../../tree/main) and
-[releases](../../releases).
+Decompiled code is approximate: renaming and control-flow reconstruction are
+not guaranteed to match the author's original source. The mod is All Rights
+Reserved, (c) Socolio.

@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Fabric-Jar-Type: classes
+Fabric-Loom-Client-Only-Entries: bundleinventory.client.mixins.json;io/s
+ ocol/bundleinventory/BundleInventoryMod.class;io/socol/bundleinventory/
+ inventory/BundleInventory.class;io/socol/bundleinventory/inventory/Bund
+ leInventoryHandler$BundleContentSlot.class;io/socol/bundleinventory/inv
+ entory/BundleInventoryHandler$BundleSlot.class;io/socol/bundleinventory
+ /inventory/BundleInventoryHandler$Robot.class;io/socol/bundleinventory/
+ inventory/BundleInventoryHandler.class;io/socol/bundleinventory/invento
+ ry/BundleInventoryScreen.class;io/socol/bundleinventory/mixin/client/Cl
+ ientPlayerInteractionManagerMixin.class;io/socol/bundleinventory/util/S
+ tepColor.class
+Fabric-Loom-Mixin-Remap-Type: static
+Fabric-Loom-Split-Environment: true
+Fabric-Gradle-Version: 8.10.2
+Fabric-Loom-Version: 1.8.10
+Fabric-Mixin-Compile-Extensions-Version: 0.6.0
+Fabric-Minecraft-Version: 1.21.2
+Fabric-Tiny-Remapper-Version: 0.10.4
+Fabric-Loader-Version: 0.16.7
+Fabric-Mixin-Version: 0.15.3+mixin.0.8.7
+Fabric-Mixin-Group: net.fabricmc
+Fabric-Mapping-Namespace: intermediary
+

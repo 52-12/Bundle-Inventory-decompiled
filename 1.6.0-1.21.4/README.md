@@ -1,0 +1,21 @@
+# 1.6.0 - 1.21.4
+
+Decompiled source of the official Bundle Inventory upload **Fabric - 1.21.4 - 1.6.0** from
+Modrinth.
+
+- Mod version: `1.6.0`
+- Game versions: `1.21.4`
+- Loaders: `fabric`
+- Published: `2024-12-05T18:24:29.368229Z`
+- File: `BundleInventory-Fabric-1.6.0.jar` (147839 bytes)
+- SHA-512: `51234361ac44667191b3f6db199f0e5c2efa4a5dabd6f99325fa2b8046d1a22b6d5e01f907a8e07a455140e93dfeb1bfd2bdcbdd30294b6d3245c0aa91700a49`
+- Download: https://cdn.modrinth.com/data/9uikk2Ea/versions/gSn5Nr8L/BundleInventory-Fabric-1.6.0.jar
+
+`intermediary/` is the direct Vineflower decompilation of the published jar,
+so Minecraft classes/methods keep their Fabric **intermediary** names
+(`class_1234`, `method_1234`). `fabric.mod.json` is copied from the jar for
+provenance.
+
+The port's adapted, Mojang-named sources for the versions it recompiles live on
+the [main branch](https://github.com/52-12/Bundle-Inventory-decompiled/tree/main)
+under `src/versions/`. Decompiled code is approximate.
