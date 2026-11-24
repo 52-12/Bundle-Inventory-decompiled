@@ -1,0 +1,148 @@
+package io.socol.bundleinventory;
+
+import io.socol.bundleinventory.inventory.BundleInventoryHandler;
+import io.socol.bundleinventory.inventory.BundleInventoryScreen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.ItemPickerMenu;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.BundleItem;
+import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
+
+public class Hooks {
+   private static final java.util.Map<Class<?>, java.lang.reflect.Field> SLOT_TARGET_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+   public Hooks() {
+   }
+
+   /**
+    * CreativeModeInventoryScreen.SlotWrapper is package-private in vanilla, so it cannot be
+    * referenced from here. It holds exactly one Slot-typed field (the wrapped slot); reading it
+    * by type works on every loader, while the wrapper's own getContainerSlot() returns the menu
+    * index and would reject hotbar slots.
+    */
+   @Nullable
+   private static Slot unwrapSlot(Slot slot) {
+      Class<?> type = slot.getClass();
+      if (type == Slot.class) {
+         return slot;
+      }
+
+      java.lang.reflect.Field field = SLOT_TARGET_CACHE.get(type);
+      if (field == null) {
+         for (java.lang.reflect.Field candidate : type.getDeclaredFields()) {
+            if (candidate.getType() == Slot.class) {
+               try {
+                  candidate.setAccessible(true);
+               } catch (RuntimeException ignored) {
+               }
+
+               field = candidate;
+               break;
+            }
+         }
+
+         if (field == null) {
+            return slot;
+         }
+
+         SLOT_TARGET_CACHE.put(type, field);
+      }
+
+      try {
+         Object value = field.get(slot);
+         return value instanceof Slot target && target != slot ? target : slot;
+      } catch (ReflectiveOperationException | RuntimeException ignored) {
+         return slot;
+      }
+   }
+
+   @Nullable
+   public static InteractionResult onItemInteract(Player player, InteractionHand hand) {
+      if (player == null || hand == null) {
+         return null;
+      }
+
+      if (player.isShiftKeyDown()) {
+         return null;
+      }
+
+      ItemStack heldStack = player.getItemInHand(hand);
+      if (!(heldStack.getItem() instanceof BundleItem)) {
+         return null;
+      }
+
+      int bundleSlot = hand == InteractionHand.MAIN_HAND ? player.getInventory().getSelectedSlot() : 40;
+      return BundleInventoryMod.openBundleInventory(bundleSlot, false) ? InteractionResult.SUCCESS : null;
+   }
+
+   public static boolean onClickSlot(int syncId, int slotId, int button, ContainerInput actionType, Player player) {
+      if (!(player instanceof LocalPlayer)) {
+         return false;
+      }
+
+      Minecraft mc = Minecraft.getInstance();
+      if (!(mc.gui.screen() instanceof BundleInventoryScreen)) {
+         return false;
+      }
+
+      if (player.containerMenu.containerId != syncId) {
+         return false;
+      }
+
+      BundleInventoryHandler handler = (BundleInventoryHandler)((BundleInventoryScreen)mc.gui.screen()).getMenu();
+      return handler.handlePlayerSlotClick(slotId, button, actionType);
+   }
+
+   public static boolean onScreenSlotClick(AbstractContainerMenu handler, Slot slot, int slotId, int button, ContainerInput actionType) {
+      Minecraft client = Minecraft.getInstance();
+      LocalPlayer player = client.player;
+      if (player != null && slot != null && handler != null) {
+         boolean isCreativeInventory = handler instanceof ItemPickerMenu;
+         if (isCreativeInventory) {
+            slot = unwrapSlot(slot);
+         }
+
+         if (slot.container != player.getInventory()) {
+            return false;
+         }
+
+         // NOTE: do NOT gate on the menu slot id here. In the creative screen the player-inventory
+         // slots are only SlotWrapper-wrapped (menu ids 0..45) on the "Survival Inventory" tab; on
+         // other tabs they are plain slots appended after the 45 picker slots (menu ids >= 45). The
+         // container + container-slot check covers all layouts (armor 36-39 and offhand 40 excluded).
+         if (slot.getContainerSlot() >= 36) {
+            return false;
+         }
+
+         if (actionType != ContainerInput.QUICK_MOVE || button != 1) {
+            return false;
+         }
+
+         if (!handler.getCarried().isEmpty()) {
+            return false;
+         }
+
+         if (slot.hasItem() && slot.getItem().getItem() instanceof BundleItem) {
+            boolean openInventoryOnClose = true;
+            if (player.containerMenu != player.inventoryMenu) {
+               player.closeContainer();
+               openInventoryOnClose = isCreativeInventory;
+            }
+
+            int bundleSlot = slot.getContainerSlot();
+            return BundleInventoryMod.openBundleInventory(bundleSlot, openInventoryOnClose);
+         } else {
+            return false;
+         }
+      } else {
+         return false;
+      }
+   }
+}
