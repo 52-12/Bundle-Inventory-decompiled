@@ -7,6 +7,12 @@ Fabric and NeoForge**, rebuilt from the author's own published builds — plus
 Forge from 1.21.3 and a **NilLoader build** that runs the mod on
 completely vanilla Minecraft with no mod loader at all.
 
+**Downloads:** every jar for every group is attached to
+[releases](https://github.com/52-12/Bundle-Inventory-decompiled/releases);
+**decompiled sources** for each Minecraft version live on the
+[`decompiled`](https://github.com/52-12/Bundle-Inventory-decompiled/tree/decompiled)
+branch.
+
 One jar per **release group** per loader — the biggest Minecraft span each
 loader can honestly run a single jar on:
 
@@ -122,7 +128,7 @@ Requires **JDK 25 to run Gradle** (Stonecutter 0.10). The 1.21.x groups compile
 with a Java 21 toolchain that Gradle auto-provisions.
 
 ```bash
-# Everything (30 release groups: 9 Fabric + 9 NeoForge + 9 Forge + 3 NilLoader).
+# Everything (38 release groups: 9 Fabric + 9 NeoForge + 9 Forge + 11 NilLoader).
 #
 # One node at a time is the safe profile: ForgeGradle performs its Minecraft
 # setup at CONFIGURATION time, so configure-on-demand is enabled in
