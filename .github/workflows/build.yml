@@ -140,5 +140,5 @@ jobs:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
           name: Bundle Inventory ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
           body_path: CHANGELOG.md
-          files: dist/*.jar
+          files: dist/**/*.jar
           fail_on_unmatched_files: true
