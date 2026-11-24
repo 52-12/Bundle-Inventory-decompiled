@@ -389,7 +389,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
 
    private boolean isBundleFull() {
       BundleContents content = this.bundleInventory.getBundleContent();
-      return content == null || content.weight().getOrThrow().compareTo(Fraction.ONE) >= 0;
+      return content == null || content.weight().result().orElse(Fraction.ONE).compareTo(Fraction.ONE) >= 0;
    }
 
    private int checkStackCanBeAddedToBundle(ItemStack stackToAdd) {

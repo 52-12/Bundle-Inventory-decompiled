@@ -316,13 +316,15 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
          return true;
       } else {
          boolean movingBundle = stackToMove.getItem() instanceof BundleItem;
-         int canAddCount = stackToMove.getCount();
+         boolean putBackRemaining = true;
          if (BundleInventoryMod.config().clientSideItemInsertionChecks()) {
-            canAddCount = this.checkStackCanBeAddedToBundle(stackToMove);
+            int canAddCount = this.checkStackCanBeAddedToBundle(stackToMove);
             if (canAddCount <= 0) {
                playInsertFailSound(player);
                return true;
             }
+
+            putBackRemaining = canAddCount < stackToMove.getCount();
          }
 
          BundleInventoryHandler.Robot robot = this.createRobot(player);
@@ -337,7 +339,7 @@ public class BundleInventoryHandler extends AbstractContainerMenu {
             robot.clickBundle(ClickAction.PRIMARY);
          } else {
             robot.clickBundle(ClickAction.PRIMARY);
-            if (canAddCount < stackToMove.getCount()) {
+            if (putBackRemaining) {
                robot.clickSlot(ClickAction.PRIMARY, slotId);
             }
          }

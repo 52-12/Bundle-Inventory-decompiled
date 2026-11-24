@@ -36,8 +36,9 @@ transformers key members by **SRG name** (Forge's own production ATs do;
 the generated per-era ATs follow), while 26.x uses Mojang names. Quilt runs
 the Fabric jars natively (they nest Fabric API's `fabric-api-base` and
 `fabric-resource-loader` modules jar-in-jar to mount the mod's assets, which
-Quilt Loader supports exactly like Fabric Loader, and the
-`fabricloader >=0.16.x` floor is well under Quilt's reported 0.19.5), so no
+Quilt Loader supports exactly like Fabric Loader, and the per-era
+`fabricloader` floors (0.16.7 -> 0.19.3, raised to the maximum the bundled
+modules declare) are satisfied by Quilt's reported 0.19.5), so no
 separate Quilt build exists — verify with one playtest on Quilt. No other
 loader has builds for any Minecraft version that has the bundle item.
 

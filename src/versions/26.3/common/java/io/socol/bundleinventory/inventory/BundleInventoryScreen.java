@@ -16,6 +16,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
+import org.apache.commons.lang3.math.Fraction;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
@@ -52,7 +53,7 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
       this.trimmedTitle = trimTitleToWidth(this.getTitle(), 120);
       this.openInventoryOnClose = openInventoryOnClose;
       this.inventoryLabelY = this.imageHeight - 94;
-      this.currentBarOccupancy = handler.getBundleInventory().getBundleContent().weight().getOrThrow().floatValue();
+      this.currentBarOccupancy = handler.getBundleInventory().getBundleContent().weight().result().orElse(Fraction.ONE).floatValue();
       this.prevBarOccupancy = this.currentBarOccupancy;
    }
 
@@ -136,7 +137,7 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
 
             drawer.move(this.imageWidth - 7 - barWidth, 8).drawBossBar(barWidth, barProgress, barColor, BossBarOverlay.NOTCHED_10);
          } else {
-            this.drawSmoothBar(context, x0, y0, delta, content.weight().getOrThrow().floatValue());
+            this.drawSmoothBar(context, x0, y0, delta, content.weight().result().orElse(Fraction.ONE).floatValue());
          }
       }
    }
@@ -215,8 +216,8 @@ public class BundleInventoryScreen extends AbstractContainerScreen<BundleInvento
          this.prevBarOccupancy = this.currentBarOccupancy;
          BundleContents content = ((BundleInventoryHandler)this.menu).getBundleInventory().getBundleContent();
          if (content != null) {
-            this.barColor.update(content.weight().getOrThrow().floatValue());
-            float targetBarValue = content.weight().getOrThrow().floatValue();
+            this.barColor.update(content.weight().result().orElse(Fraction.ONE).floatValue());
+            float targetBarValue = content.weight().result().orElse(Fraction.ONE).floatValue();
             this.currentBarOccupancy = Mth.lerp(0.5F, this.currentBarOccupancy, targetBarValue);
             if (targetBarValue <= 0.0F && this.currentBarOccupancy <= 0.01F) {
                this.currentBarOccupancy = 0.0F;

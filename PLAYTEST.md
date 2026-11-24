@@ -123,3 +123,23 @@ Report a failure with: instance name, action, expected vs actual, and the
 - Regenerate everything: `tools/make-playtest-worlds.ps1` (validates each
   datapack with that era's server before copying), then
   `tools/sync-prism-instances.ps1` after rebuilding jars.
+
+## Automated matrix
+
+The interaction layer can be checked on every instance without a human:
+
+1. join, `/clear`, give a bundle and 5 stone, select hotbar 1, right-click to
+   open the bundle screen;
+2. click the stone slot, click content slot 0 (insert), park any stray cursor
+   stack, close the screen;
+3. reopen, click content slot 0 (take out), park the result, close;
+4. assert with output-only commands (`execute unless items entity @s hotbar.*
+   minecraft:stone run seed`, the same with `run list` and `run difficulty`)
+   and read the chat lines from `latest.log`.
+
+Every group has passed this sequence (38 jars across 39 instances, including
+Quilt). Two harness notes: Forge 26.x rejects `execute ... run say` with a
+command-signature error, and `execute if items` needs a slot range such as
+`hotbar.*` - a bare `*` is rejected. Give the instances 2 GB or the launcher's
+low-memory dialog can block the launch before the game starts.
+
